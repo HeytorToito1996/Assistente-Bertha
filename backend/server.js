@@ -24,6 +24,7 @@ require('dotenv').config();
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const { GoogleGenAI } = require('@google/genai');
@@ -43,6 +44,15 @@ const XLSX = require('xlsx'); // converte .xlsx/.xls (Excel) para CSV/texto
 // ============================================================================
 const PORT = Number(process.env.PORT || 3000);
 const MODELO_GEMINI = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+// Fila de modelos alternativos usada quando o principal estiver cheio/indisponível.
+// Consulte os modelos disponíveis da sua conta em https://ai.google.dev/gemini-api/docs/models
+const FALLBACKS_PADRAO = [
+  'gemini-3.7-flash',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+];
 const MAX_HISTORICO = 10; // últimas N mensagens recuperadas do Firestore
 const CARGOS_VALIDOS = ['aluno', 'secretaria', 'professor', 'direcao'];
 
@@ -63,7 +73,7 @@ function inicializarFirebase() {
   }
 
   const caminhoCredencial = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  const caminhoAbsoluto = caminhoCredencial ? path.resolve(caminhoCredencial) : null;
+  const caminhoAbsoluto = caminhoCredencial ? path.resolve(__dirname, caminhoCredencial) : null;
 
   if (caminhoAbsoluto && !fs.existsSync(caminhoAbsoluto)) {
     console.error(
@@ -203,6 +213,25 @@ async function obterHistoricoRecente(userId) {
     return [];
   }
   return snapshot.docs.map((doc) => doc.data()).reverse();
+}
+
+// Recupera o histórico completo em ordem cronológica, com data em ISO string.
+async function obterHistoricoCompleto(userId, limite = 500) {
+  const ref = db.collection('historicos').doc(userId).collection('mensagens');
+  const snapshot = await ref.orderBy('criadoEm', 'asc').limit(limite).get();
+  if (snapshot.empty) {
+    return [];
+  }
+  return snapshot.docs.map((doc) => {
+    const dados = doc.data();
+    const data = dados.criadoEm;
+    return {
+      id: doc.id,
+      role: dados.role,
+      text: dados.text,
+      criadoEm: data && typeof data.toDate === 'function' ? data.toDate().toISOString() : data || null,
+    };
+  });
 }
 
 // ============================================================================
@@ -351,6 +380,76 @@ function extrairTextoResposta(resposta) {
   return '';
 }
 
+// Chama o Gemini com tentativas automáticas para erros transitórios
+// (429 = limite de requisições, 5xx = indisponibilidade temporária do modelo)
+// e, se um modelo estiver indisponível, troca automaticamente para o próximo
+// da fila de fallbacks (GEMINI_MODEL_FALLBACKS no .env + FALLBACKS_PADRAO).
+const STATUS_TRANSITORIOS = [408, 429, 500, 502, 503];
+const RETRIES_POR_MODELO = 2;
+const ATRASO_BASE_MS = 2000;
+const RODADAS_MAX = 2; // segundas passadas pela fila (indisponibilidade é passageira)
+const PAUSA_ENTRE_RODADAS_MS = 5000;
+
+function montarListaDeModelos() {
+  const fallbackEnv = (process.env.GEMINI_MODEL_FALLBACKS || '')
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean);
+  return [...new Set([MODELO_GEMINI, ...FALLBACKS_PADRAO, ...fallbackEnv])];
+}
+
+async function chamarGeminiComRetry(contents, systemInstruction) {
+  const modelos = montarListaDeModelos();
+  let ultimoErro;
+
+  for (let roda = 1; roda <= RODADAS_MAX; roda++) {
+    for (const modelo of modelos) {
+      for (let tentativa = 1; tentativa <= RETRIES_POR_MODELO; tentativa++) {
+        try {
+          const resposta = await ai.models.generateContent({
+            model: modelo,
+            contents,
+            config: { systemInstruction, temperature: 0.7 },
+          });
+          if (modelo !== MODELO_GEMINI) {
+            console.warn(`[Gemini] Modelo em uso neste turno: ${modelo} (fallback).`);
+          }
+          return resposta;
+        } catch (erro) {
+          ultimoErro = erro;
+          const status = Number(erro?.status || 0);
+
+          // Modelo não encontrado/indisponível para a conta -> tenta o próximo já.
+          if (status === 404) {
+            console.warn(`[Gemini] Modelo "${modelo}" indisponível (404). Tentando o próximo...`);
+            break;
+          }
+          // Erro de validação (400) etc. não é resolvido trocando de modelo.
+          if (!STATUS_TRANSITORIOS.includes(status) && status !== 0) {
+            throw erro;
+          }
+          if (tentativa < RETRIES_POR_MODELO) {
+            const esperaMs = ATRASO_BASE_MS * 2 ** (tentativa - 1);
+            console.warn(
+              `[Gemini] Modelo "${modelo}" falhou (status ${status}) — nova tentativa em ${esperaMs}ms...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, esperaMs));
+          }
+        }
+      }
+    }
+    // Nenhum modelo respondeu nesta rodada: espera e varre de novo
+    // (picos de demanda costumam passar em poucos segundos).
+    if (roda < RODADAS_MAX) {
+      console.warn(
+        `[Gemini] Nenhum modelo respondeu na rodada ${roda}. Nova rodada em ${PAUSA_ENTRE_RODADAS_MS}ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, PAUSA_ENTRE_RODADAS_MS));
+    }
+  }
+  throw ultimoErro;
+}
+
 // Grava a pergunta do usuário e a resposta da IA na subcoleção de histórico.
 async function salvarHistorico(userId, pergunta, resposta) {
   const ref = db.collection('historicos').doc(userId).collection('mensagens');
@@ -377,6 +476,117 @@ app.get('/api/health', (req, res) => {
     modelo: MODELO_GEMINI,
     timestamp: new Date().toISOString(),
   });
+});
+
+// Valida um usuário existente e devolve nome/cargo (usado na tela de login).
+app.get('/api/usuario/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId || !userId.trim()) {
+      return res.status(400).json({ erro: 'O campo "userId" é obrigatório.' });
+    }
+    const usuario = await obterUsuario(userId);
+    if (!usuario) {
+      return res.status(404).json({ erro: `Usuário "${userId}" não encontrado na coleção "usuarios".` });
+    }
+    const cargo = extrairCargoDoUsuario(usuario);
+    if (!cargo) {
+      return res.status(403).json({ erro: `O cargo do usuário "${userId}" é inválido ou não autorizado.` });
+    }
+    return res.json({ userId, nome: usuario.nome || userId, cargo });
+  } catch (error) {
+    console.error('[ERRO] Falha em GET /api/usuario/:userId:', error);
+    return res.status(500).json({ erro: 'Erro ao consultar o usuário.', detalhes: error.message });
+  }
+});
+
+// Devolve todo o histórico de conversas de um usuário (ordem cronológica).
+app.get('/api/historico/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limite = Math.min(Number(req.query.limite) || 500, 1000);
+    if (!userId || !userId.trim()) {
+      return res.status(400).json({ erro: 'O campo "userId" é obrigatório.' });
+    }
+    const mensagens = await obterHistoricoCompleto(userId, limite);
+    return res.json({ userId, quantidade: mensagens.length, mensagens });
+  } catch (error) {
+    console.error('[ERRO] Falha em GET /api/historico/:userId:', error);
+    return res.status(500).json({ erro: 'Erro ao consultar o histórico.', detalhes: error.message });
+  }
+});
+
+// Autentica um usuário por e-mail + senha. Devolve os dados públicos dele.
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, senha } = req.body || {};
+    const emailNormalizado = normalizarEmail(email);
+    if (!validarEmail(emailNormalizado)) {
+      return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+    }
+    if (!senha) {
+      return res.status(400).json({ erro: 'Informe a senha.' });
+    }
+    const doc = await autenticarUsuario(emailNormalizado, senha);
+    if (!doc) {
+      return res.status(401).json({ erro: 'E-mail ou senha inválidos.' });
+    }
+    const usuarioPublico = montarUsuarioPublico(doc);
+    if (!usuarioPublico.cargo) {
+      return res.status(403).json({ erro: 'Este usuário não tem um cargo autorizado.' });
+    }
+    return res.json(usuarioPublico);
+  } catch (error) {
+    console.error('[ERRO] Falha em POST /api/login:', error);
+    return res.status(500).json({ erro: 'Erro ao autenticar.', detalhes: error.message });
+  }
+});
+
+// Cadastra um novo usuário (aluno/secretaria/professor).
+app.post('/api/usuarios', async (req, res) => {
+  try {
+    const { nome, email, senha, cargo = 'aluno' } = req.body || {};
+    const nomeLimpo = String(nome || '').trim();
+    const cargoNormalizado = String(cargo || '').trim().toLowerCase();
+    const emailNormalizado = normalizarEmail(email);
+
+    if (nomeLimpo.length < 3) {
+      return res.status(400).json({ erro: 'Informe o nome completo.' });
+    }
+    if (!validarEmail(emailNormalizado)) {
+      return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+    }
+    if (typeof senha !== 'string' || senha.length < 6) {
+      return res.status(400).json({ erro: 'A senha deve ter ao menos 6 caracteres.' });
+    }
+    if (!CARGOS_VALIDOS.includes(cargoNormalizado)) {
+      return res.status(400).json({ erro: 'Cargo inválido. Use aluno, secretaria, professor ou direcao.' });
+    }
+
+    const existente = await obterUsuarioPorEmail(emailNormalizado);
+    if (existente) {
+      return res.status(409).json({ erro: 'Já existe um usuário cadastrado com este e-mail.' });
+    }
+
+    const novoDoc = await db.collection('usuarios').add({
+      nome: nomeLimpo,
+      email: emailNormalizado,
+      senhaHash: criarHashSenha(senha),
+      cargo: cargoNormalizado,
+      criadoEm: FieldValue.serverTimestamp(),
+    });
+
+    console.log(`[LOGIN] Usuário cadastrado: ${novoDoc.id} (${emailNormalizado}, cargo=${cargoNormalizado})`);
+    return res.status(201).json({
+      userId: novoDoc.id,
+      nome: nomeLimpo,
+      email: emailNormalizado,
+      cargo: cargoNormalizado,
+    });
+  } catch (error) {
+    console.error('[ERRO] Falha em POST /api/usuarios:', error);
+    return res.status(500).json({ erro: 'Erro ao cadastrar o usuário.', detalhes: error.message });
+  }
 });
 
 app.post('/api/chat', async (req, res) => {
@@ -439,15 +649,8 @@ app.post('/api/chat', async (req, res) => {
 
     const contents = montarContents(historico, novasPartes);
 
-    // ---- 5) Chamar o Gemini ------------------------------------------------
-    const resposta = await ai.models.generateContent({
-      model: MODELO_GEMINI,
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      },
-    });
+    // ---- 5) Chamar o Gemini (com retry para 429/5xx) ------------------------
+    const resposta = await chamarGeminiComRetry(contents, systemInstruction);
 
     const textoResposta = extrairTextoResposta(resposta);
     if (!textoResposta) {
@@ -463,6 +666,24 @@ app.post('/api/chat', async (req, res) => {
     // Erros de arquivo (tipo não suportado, falha na leitura/conversão) -> 400
     if (error.codigo === 'ARQUIVO_NAO_SUPORTADO' || error.codigo === 'ERRO_ARQUIVO') {
       return res.status(400).json({ erro: error.message });
+    }
+    // Indisponibilidade temporária / limite de requisições do Gemini
+    const status = Number(error?.status || 0);
+    if (status === 503) {
+      console.error('[ERRO] Gemini indisponível:', error.message);
+      return res.status(503).json({
+        erro:
+          'O serviço de IA da escola está temporariamente cheio no momento. ' +
+          'Aguarde alguns segundos e envie a mensagem novamente.',
+      });
+    }
+    if (status === 429) {
+      console.error('[ERRO] Limite de requisições do Gemini:', error.message);
+      return res.status(429).json({
+        erro:
+          'Limite de requisições temporário atingido (plano gratuito). ' +
+          'Aguarde um instante e tente novamente.',
+      });
     }
     console.error('[ERRO] Falha em POST /api/chat:', error);
     return res.status(500).json({
@@ -491,11 +712,76 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================================================
-//  INICIALIZAÇÃO DO SERVIDOR
+//  AUTENTICAÇÃO E CADASTRO DE USUÁRIOS
+// ----------------------------------------------------------------------------
+//  A senha nunca é armazenada em texto puro: usamos scrypt (Node nativo) com
+//  salt único por usuário, no formato "salt:hash".
+// ----------------------------------------------------------------------------
+
+function criarHashSenha(senha) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(senha, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verificarSenha(senha, hashArmazenado) {
+  try {
+    const [salt, hashEsperado] = String(hashArmazenado || '').split(':');
+    if (!salt || !hashEsperado) {
+      return false;
+    }
+    const hashTeste = crypto.scryptSync(senha, salt, 64).toString('hex');
+    return crypto.timingSafeEqual(
+      Buffer.from(hashTeste, 'hex'),
+      Buffer.from(hashEsperado, 'hex'),
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizarEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function montarUsuarioPublico(doc) {
+  const dados = doc.data();
+  return {
+    userId: doc.id,
+    nome: dados.nome || doc.id,
+    email: dados.email || null,
+    cargo: extrairCargoDoUsuario(dados) || null,
+  };
+}
+
+// Busca um usuário pelo e-mail (campo indexado automaticamente pelo Firestore).
+async function obterUsuarioPorEmail(email) {
+  const snapshot = await db.collection('usuarios').where('email', '==', email).limit(1).get();
+  return snapshot.empty ? null : snapshot.docs[0];
+}
+
+// Autentica por e-mail + senha. Retorna o documento do usuário ou null.
+async function autenticarUsuario(email, senha) {
+  const doc = await obterUsuarioPorEmail(normalizarEmail(email));
+  if (!doc || !verificarSenha(senha, doc.get('senhaHash'))) {
+    return null;
+  }
+  return doc;
+}
+
+// ============================================================================
+//  INÍCIO DO SERVIDOR
 // ============================================================================
 app.listen(PORT, () => {
+  const modelos = montarListaDeModelos();
   console.log(
     `\n[Assistente Escolar API] Rodando em http://localhost:${PORT}\n` +
-      `Modelo Gemini: ${MODELO_GEMINI} | Health check: http://localhost:${PORT}/api/health\n`
+      `Modelo principal: ${MODELO_GEMINI} | Fallbacks: ${modelos
+        .slice(1)
+        .join(', ')} | Health check: http://localhost:${PORT}/api/health\n`
   );
 });

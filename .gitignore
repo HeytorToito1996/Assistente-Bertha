@@ -1,7 +1,4 @@
 node_modules/
-.env
-*.env.local
-service-account-key.json
-*firebase-adminsdk*.json
+dist/
 *.log
 .DS_Store
