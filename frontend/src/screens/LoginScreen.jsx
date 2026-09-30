@@ -1,23 +1,59 @@
 import { useRef, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  IdCard,
+  Lock,
+  Mail,
+  School,
+  UserCheck,
+  Zap,
+} from 'lucide-react';
 import { buscarUsuario, login } from '../api';
+import '../tela-login.css';
 
+/* ---------------------------------------------------------------------------
+ *  PERFIS DE ACESSO
+ *  Cada perfil mapeia para um "cargo" válido do back-end, usado para conferir
+ *  se o e-mail informado pertence de fato ao perfil escolhido na aba.
+ * ------------------------------------------------------------------------- */
 const PERFIS = [
   {
-    valor: 'aluno',
-    titulo: 'Sou Aluno(a)',
-    descricao: 'Acesso ao chat com o tutor acadêmico para tirar dúvidas e estudar.',
-    icone: '🎓',
+    cargo: 'aluno',
+    rotulo: 'Aluno',
+    icone: GraduationCap,
+    emailDemo: 'maria@escola.edu.br',
+    senhaDemo: 'aluno123',
   },
   {
-    valor: 'gestao',
-    titulo: 'Sou da Gestão',
-    descricao: 'Acesso ao analista da escola para consultas e análise de arquivos.',
-    icone: '🏫',
+    cargo: 'secretaria',
+    rotulo: 'Gestão',
+    icone: School,
+    emailDemo: 'ana@escola.edu.br',
+    senhaDemo: 'gestao123',
+  },
+  {
+    cargo: 'professor',
+    rotulo: 'Professor',
+    icone: UserCheck,
+    emailDemo: 'paulo@escola.edu.br',
+    senhaDemo: 'prof2024',
   },
 ];
 
+/* Nomes amigáveis para a mensagem de erro quando o perfil não bate. */
+const NOMES_CARGO = {
+  aluno: 'Aluno(a)',
+  secretaria: 'Gestão / Secretaria',
+  professor: 'Professor(a)',
+  direcao: 'Direção',
+};
+
 export default function LoginScreen({ onLogin }) {
-  const [perfil, setPerfil] = useState(null);
+  const [perfil, setPerfil] = useState('aluno');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -30,12 +66,16 @@ export default function LoginScreen({ onLogin }) {
   const [erroSeed, setErroSeed] = useState('');
   const codigoRef = useRef(null);
 
+  const perfilAtual = PERFIS.find((p) => p.cargo === perfil) || PERFIS[0];
+
+  function trocarPerfil(novoPerfil) {
+    setPerfil(novoPerfil);
+    setErro('');
+  }
+
   async function entrar(evento) {
     evento.preventDefault();
-    if (!perfil) {
-      setErro('Selecione se você é aluno(a) ou da gestão.');
-      return;
-    }
+
     const emailLimpo = email.trim();
     if (!emailLimpo) {
       setErro('Informe o seu e-mail.');
@@ -51,11 +91,11 @@ export default function LoginScreen({ onLogin }) {
     setCarregando(true);
     try {
       const usuario = await login(emailLimpo, senha);
-      if (perfil === 'aluno' && usuario.cargo !== 'aluno') {
-        throw new Error(`Este e-mail é de um usuário da gestão. Selecione "Sou da Gestão".`);
-      }
-      if (perfil === 'gestao' && usuario.cargo === 'aluno') {
-        throw new Error(`Este e-mail é de um(a) aluno(a). Selecione "Sou Aluno(a)".`);
+      if (usuario.cargo !== perfil) {
+        throw new Error(
+          `Este e-mail pertence ao perfil "${NOMES_CARGO[usuario.cargo] || usuario.cargo}". ` +
+            `Selecione a aba correspondente.`
+        );
       }
       onLogin(usuario);
     } catch (erroCapturado) {
@@ -63,6 +103,13 @@ export default function LoginScreen({ onLogin }) {
     } finally {
       setCarregando(false);
     }
+  }
+
+  function preencherDemo() {
+    setEmail(perfilAtual.emailDemo);
+    setSenha(perfilAtual.senhaDemo);
+    setErro('');
+    emailRef.current?.focus();
   }
 
   async function entrarComCodigo(evento) {
@@ -87,102 +134,156 @@ export default function LoginScreen({ onLogin }) {
   }
 
   return (
-    <div className="login">
-      <div className="login-card">
-        <div className="login-marca">
-          <img src="/logo2.jpeg" alt="Logotipo da instituição" className="login-logo" />
-          <h1>Assistente Virtual Escolar</h1>
-          <p>Escolha o seu perfil e entre com o seu e-mail</p>
-        </div>
+    <main className="login-screen">
+      <div className="login-wrapper">
+        {/* Cabeçalho institucional */}
+        <header className="login-header">
+          <img
+            src="/logo2.jpeg"
+            alt="Logotipo da instituição"
+            className="login-brand-logo"
+          />
+          <h1 className="login-brand-title">Dona Bertha</h1>
+          <p className="login-brand-subtitle">Assistente Virtual Escolar Inteligente</p>
+        </header>
 
-        <form onSubmit={entrar} className="login-form">
-          <div className="perfis">
-            {PERFIS.map((p) => (
-              <button
-                type="button"
-                key={p.valor}
-                className={`perfil-card ${perfil === p.valor ? 'perfil-card-ativo' : ''}`}
-                onClick={() => {
-                  setPerfil(p.valor);
-                  setErro('');
-                }}
-              >
-                <span className="perfil-icone">{p.icone}</span>
-                <strong>{p.titulo}</strong>
-                <small>{p.descricao}</small>
-              </button>
-            ))}
+        {/* Cartão principal */}
+        <div className="login-card">
+          {/* Abas de seleção de perfil */}
+          <nav className="login-tabs" role="tablist" aria-label="Opções de acesso">
+            {PERFIS.map((p) => {
+              const Icone = p.icone;
+              const ativa = perfil === p.cargo;
+              return (
+                <button
+                  key={p.cargo}
+                  type="button"
+                  role="tab"
+                  aria-selected={ativa}
+                  className={`login-tab ${ativa ? 'login-tab-ativa' : ''}`}
+                  onClick={() => trocarPerfil(p.cargo)}
+                >
+                  <Icone aria-hidden="true" />
+                  <span>{p.rotulo}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Formulário (o mesmo campo e-mail/senha para os 3 perfis) */}
+          <form className="login-form" role="tabpanel" onSubmit={entrar} key={perfil}>
+            <div className="login-form-group">
+              <label htmlFor="login-email">E-mail</label>
+              <div className="login-input-wrap">
+                <Mail className="login-input-icon" aria-hidden="true" />
+                <input
+                  id="login-email"
+                  ref={emailRef}
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErro('');
+                  }}
+                  placeholder="voce@escola.edu.br"
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="login-form-group">
+              <label htmlFor="login-senha">Senha</label>
+              <div className="login-input-wrap">
+                <Lock className="login-input-icon" aria-hidden="true" />
+                <input
+                  id="login-senha"
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={senha}
+                  onChange={(e) => {
+                    setSenha(e.target.value);
+                    setErro('');
+                  }}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-btn-ver-senha"
+                  onClick={() => setMostrarSenha((v) => !v)}
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {mostrarSenha ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
+
+            {erro && (
+              <p className="login-erro" role="alert">
+                <AlertCircle aria-hidden="true" />
+                <span>{erro}</span>
+              </p>
+            )}
+
+            <button type="submit" className="login-btn-submit" disabled={carregando}>
+              <span>{carregando ? 'Entrando…' : `Entrar como ${perfilAtual.rotulo}`}</span>
+              <ArrowRight aria-hidden="true" />
+            </button>
+
+            {/* Atalho de acesso rápido para avaliação */}
+            <div className="login-quick-demo">
+              <span className="login-demo-label">Acesso rápido para avaliação:</span>
+              <div className="login-demo-buttons">
+                <button type="button" className="login-btn-demo" onClick={preencherDemo}>
+                  <Zap aria-hidden="true" />
+                  <span>Preencher dados de {perfilAtual.rotulo} Demo</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Entrada alternativa por código de usuário (modo teste) */}
+          <div className="login-divisor">
+            <span>Ou entre pelo código (modo teste)</span>
           </div>
 
-          <label className="campo">
-            <span>E-mail</span>
-            <input
-              ref={emailRef}
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setErro('');
-              }}
-              placeholder="voce@escola.edu.br"
-              autoComplete="username"
-            />
-          </label>
-
-          <label className="campo">
-            <span>Senha</span>
-            <div className="campo-senha">
+          <form className="login-modo-teste" onSubmit={entrarComCodigo}>
+            <div className="login-input-wrap">
+              <IdCard className="login-input-icon" aria-hidden="true" />
               <input
-                type={mostrarSenha ? 'text' : 'password'}
-                value={senha}
+                ref={codigoRef}
+                type="text"
+                value={codigoSeed}
                 onChange={(e) => {
-                  setSenha(e.target.value);
-                  setErro('');
+                  setCodigoSeed(e.target.value);
+                  setErroSeed('');
                 }}
-                placeholder="••••••••"
-                autoComplete="current-password"
+                placeholder="Ex.: ALUNO-001, SEC-001 ou PROF-002"
+                autoComplete="off"
               />
-              <button
-                type="button"
-                className="botao-visualizar"
-                onClick={() => setMostrarSenha((v) => !v)}
-                title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-              >
-                {mostrarSenha ? '🙈' : '👁️'}
-              </button>
             </div>
-          </label>
+            <button type="submit" className="login-btn-codigo" disabled={carregandoSeed}>
+              {carregandoSeed ? 'Entrando…' : 'Entrar'}
+            </button>
+          </form>
 
-          {erro && <p className="erro-box">{erro}</p>}
-
-          <button type="submit" className="botao-primario" disabled={carregando}>
-            {carregando ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-
-        <div className="divisor-teste">
-          <span>Ou entre pelo código (modo teste)</span>
+          {erroSeed && (
+            <p className="login-erro" role="alert" style={{ marginTop: 12 }}>
+              <AlertCircle aria-hidden="true" />
+              <span>{erroSeed}</span>
+            </p>
+          )}
         </div>
 
-        <form onSubmit={entrarComCodigo} className="login-teste">
-          <input
-            ref={codigoRef}
-            type="text"
-            value={codigoSeed}
-            onChange={(e) => {
-              setCodigoSeed(e.target.value);
-              setErroSeed('');
-            }}
-            placeholder="Ex.: ALUNO-001 ou SEC-001"
-            autoComplete="off"
-          />
-          <button type="submit" className="botao-teste" disabled={carregandoSeed}>
-            {carregandoSeed ? 'Entrando…' : 'Entrar'}
-          </button>
-
-          {erroSeed && <p className="erro-box">{erroSeed}</p>}
-        </form>
+        {/* Rodapé */}
+        <footer className="login-footer">
+          <p>🔒 Ambiente escolar seguro e criptografado</p>
+          <span className="login-footer-separator">•</span>
+          <p>Prefeitura Municipal &amp; Rede de Ensino</p>
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }

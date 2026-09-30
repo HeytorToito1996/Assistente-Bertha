@@ -9,6 +9,7 @@
 //  Credenciais criadas (se ainda não existirem):
 //    Maria (ALUNO-001)  -> maria@escola.edu.br  / aluno123  (cargo: aluno)
 //    Ana   (SEC-001)    -> ana@escola.edu.br    / gestao123 (cargo: secretaria)
+//    Paulo (PROF-002)   -> paulo@escola.edu.br  / prof2024  (cargo: professor)
 //
 //  O script é "idempotente": se o usuário já tiver e-mail, ele não sobrescreve.
 // ============================================================================
@@ -65,6 +66,13 @@ const USUARIOS_DEMO = [
     senha: 'gestao123',
     cargo: 'secretaria',
   },
+  {
+    userId: 'PROF-002',
+    nome: 'Paulo',
+    email: 'paulo@escola.edu.br',
+    senha: 'prof2024',
+    cargo: 'professor',
+  },
 ];
 
 async function principal() {
@@ -107,8 +115,9 @@ async function principal() {
   }
 
   console.log('\nPara testar o login:');
-  console.log('  Aluno:    maria@escola.edu.br / aluno123');
-  console.log('  Gestão:   ana@escola.edu.br   / gestao123');
+  console.log('  Aluno:     maria@escola.edu.br / aluno123');
+  console.log('  Gestão:    ana@escola.edu.br   / gestao123');
+  console.log('  Professor: paulo@escola.edu.br / prof2024');
 }
 
 principal().catch((erro) => {

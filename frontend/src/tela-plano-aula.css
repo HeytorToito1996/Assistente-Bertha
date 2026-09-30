@@ -1,0 +1,645 @@
+/* ============================================================================
+   TELA DE PLANO DE AULA MENSAL (Professor)
+   ----------------------------------------------------------------------------
+   Usa o prefixo "plano-" e reaproveita as variáveis "--plan-*" da tela de
+   planejamento, para não colidir com o login ("login-") nem com o chat.
+   O documento tem regras de impressão próprias: no papel sai só o formulário,
+   sem a coluna de busca nem a barra de botões.
+   ========================================================================== */
+
+.plano {
+  height: 100%;
+  display: flex;
+  min-width: 0;
+}
+
+.plano button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.plano button:disabled {
+  cursor: not-allowed;
+}
+
+/* ---------- Coluna do formulário ---------- */
+
+.plano-formulario {
+  width: 400px;
+  min-width: 400px;
+  height: 100%;
+  overflow-y: auto;
+  background: #ffffff;
+  border-right: 1px solid var(--borda);
+  padding: 20px 22px 32px;
+}
+
+.plano-form-cabecalho h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.plano-form-cabecalho p {
+  margin: 4px 0 18px;
+  font-size: 13px;
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+.plano-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plano-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.plano-campo > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plano-campo small {
+  font-size: 12px;
+  color: var(--texto-suave);
+  line-height: 1.45;
+}
+
+.plano-campo input[type='text'],
+.plano-campo select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.plano-campo select {
+  cursor: pointer;
+}
+
+.plano-campo input:focus,
+.plano-campo select:focus {
+  border-color: var(--plan-accent);
+  box-shadow: 0 0 0 3px var(--plan-accent-anel);
+}
+
+.plano-campo-duplo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ---------- Calendário letivo ---------- */
+
+.plano-calendario {
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.plano-calendario summary {
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.plano-calendario summary:hover {
+  color: var(--plan-accent-forte);
+}
+
+.plano-calendario table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plano-calendario th,
+.plano-calendario td {
+  padding: 5px 12px;
+  font-size: 12px;
+  text-align: left;
+  border-top: 1px solid #e2e8f0;
+}
+
+.plano-calendario th {
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.plano-calendario-semanas {
+  color: #94a3b8;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.plano-calendario tr.ativo {
+  background: var(--plan-accent-fundo);
+}
+
+.plano-calendario tr.ativo th,
+.plano-calendario tr.ativo td {
+  color: var(--plan-accent-forte);
+  font-weight: 600;
+}
+
+.plano-calendario-recesso th,
+.plano-calendario-recesso td {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ---------- Opção "redigir com a IA" ---------- */
+
+.plano-opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--plan-accent-borda);
+  border-radius: 10px;
+  background: var(--plan-accent-fundo);
+  cursor: pointer;
+}
+
+.plano-opcao input {
+  margin: 2px 0 0;
+  accent-color: var(--plan-accent);
+  cursor: pointer;
+}
+
+.plano-opcao span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plano-opcao strong {
+  font-size: 13px;
+  color: var(--plan-accent-forte);
+}
+
+.plano-opcao small {
+  font-size: 12px;
+  color: var(--texto-suave);
+  line-height: 1.45;
+}
+
+/* ---------- Avisos ---------- */
+
+.plano-espera,
+.plano-aviso {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--plan-accent-fundo);
+  border: 1px solid var(--plan-accent-borda);
+  color: var(--plan-accent-forte);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plano-espera strong {
+  font-size: 13px;
+}
+
+.plano-aviso {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.plano-erro {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plano-botao-gerar {
+  padding: 13px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--plan-accent);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.plano-botao-gerar:hover:not(:disabled) {
+  background: var(--plan-accent-forte);
+}
+
+.plano-botao-gerar:disabled {
+  opacity: 0.5;
+}
+
+/* ---------- Documentos já salvos ---------- */
+
+.plano-historico {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--borda);
+}
+
+.plano-historico h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plano-historico ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plano-historico button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--texto);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.plano-historico button:hover {
+  border-color: var(--plan-accent);
+  background: var(--plan-accent-fundo);
+}
+
+/* ---------- Coluna do documento ---------- */
+
+.plano-conteudo {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--fundo);
+}
+
+.plano-vazio {
+  margin: auto;
+  padding: 40px 28px;
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 14px;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+.plano-vazio-icone {
+  display: block;
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.plano-doc-barra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--borda);
+  background: #ffffff;
+}
+
+.plano-doc-barra strong {
+  font-size: 13px;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.plano-doc-selo {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.plano-doc-acoes {
+  display: flex;
+  gap: 8px;
+}
+
+.plano-botao-secundario,
+.plano-botao-imprimir {
+  padding: 9px 15px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plano-botao-secundario {
+  border: 1px solid var(--borda);
+  background: #ffffff;
+  color: var(--texto);
+}
+
+.plano-botao-secundario:hover {
+  background: #f1f5f9;
+}
+
+.plano-botao-imprimir {
+  border: none;
+  background: var(--plan-accent);
+  color: #ffffff;
+}
+
+.plano-botao-imprimir:hover {
+  background: var(--plan-accent-forte);
+}
+
+/* ---------- O documento em si ---------- */
+
+.plano-doc {
+  max-width: 820px;
+  margin: 24px auto 60px;
+  padding: 40px 48px 48px;
+  background: #ffffff;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  color: #1f2937;
+}
+
+.plano-doc-capa {
+  text-align: center;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #1f2937;
+}
+
+.plano-doc-capa h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plano-doc-sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.plano-doc-ident {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 20px 0 26px;
+  padding: 14px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.plano-doc-ident dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.plano-doc-ident dd {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* Data de referência do bimestre e do bloco, logo abaixo do rótulo. */
+.plano-doc-ident small {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.plano-doc-secao {
+  margin-bottom: 22px;
+}
+
+.plano-doc-secao h2 {
+  margin: 0 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--borda);
+  font-size: 14.5px;
+  color: #111827;
+}
+
+.plano-doc-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plano-doc-tabela th,
+.plano-doc-tabela td {
+  border: 1px solid #cbd5e1;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.plano-doc-tabela th {
+  background: #f1f5f9;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.plano-doc-semana {
+  width: 90px;
+  font-weight: 600;
+}
+
+.plano-doc-data {
+  width: 100%;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.plano-doc-data:hover {
+  border-color: #e2e8f0;
+}
+
+.plano-doc-data:focus {
+  border-color: var(--plan-accent);
+  background: #ffffff;
+}
+
+/* Campo editável do documento: cresce com o conteúdo e some as bordas para
+   parecer um campo de formulário em papel. */
+.plano-campo-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plano-rotulo-doc {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.plano-area-doc {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #1f2937;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.plano-area-doc:hover {
+  border-color: #e2e8f0;
+}
+
+.plano-area-doc:focus {
+  border-color: var(--plan-accent);
+  background: #ffffff;
+}
+
+.plano-dica-doc {
+  font-size: 11.5px;
+  color: #9ca3af;
+}
+
+/* Marca o texto que veio do modelo padrão da Base Nacional Comum, e não do
+   escopo-sequência da escola. Só aparece na tela: no papel não vai. */
+.plano-aviso-padrao {
+  padding: 5px 8px;
+  border-left: 2px solid #fcd34d;
+  border-radius: 0 4px 4px 0;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.plano-doc-assinatura {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 44px;
+}
+
+.plano-doc-assinatura > div {
+  padding-top: 8px;
+  border-top: 1px solid #9ca3af;
+  text-align: center;
+}
+
+.plano-doc-assinatura span {
+  display: block;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.plano-doc-assinatura p {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* ---------- Impressão ----------
+   No papel sai apenas o documento: a coluna de busca, a barra de botões e as
+   dicas de edição somem, e as bordas dos campos viram linhas do formulário. */
+
+@media print {
+  .plano-formulario,
+  .plano-doc-barra,
+  .plano-dica-doc,
+  .plano-aviso-padrao {
+    display: none !important;
+  }
+
+  .plano,
+  .plano-conteudo {
+    display: block;
+    height: auto;
+    overflow: visible;
+    background: #ffffff;
+  }
+
+  .plano-doc {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .plano-area-doc,
+  .plano-doc-data {
+    border-color: transparent;
+  }
+
+  .plano-doc-secao {
+    break-inside: avoid;
+  }
+
+  .plano-doc-tabela th {
+    background: #e5e7eb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 18mm 16mm;
+  }
+}

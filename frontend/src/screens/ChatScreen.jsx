@@ -9,13 +9,28 @@ const TIPOS_DE_ARQUIVO = '.csv,.xlsx,.xls,.txt,.html,.md,.pdf,.doc,.docx';
 
 const TITULO_POR_CARGO = {
   aluno: 'Tutor Acadêmico',
-  gestao: 'Analista de Gestão',
+  secretaria: 'Analista de Gestão',
+  professor: 'Coordenador Pedagógico',
+  direcao: 'Analista de Gestão',
 };
 
 const DESCRICAO_POR_CARGO = {
   aluno: 'Tiro dúvidas, explico conteúdos e te acompanho nos estudos.',
-  gestao: 'Analiso arquivos e dados para apoiar a gestão escolar.',
+  secretaria: 'Analiso arquivos e dados para apoiar a gestão escolar.',
+  professor: 'Apoio seu planejamento didático e uso os planos de aula que você já elaborou aqui.',
+  direcao: 'Analiso arquivos e dados consolidados da escola.',
 };
+
+// Nome do perfil exibido na interface, a partir do cargo normalizado.
+const ROTULO_POR_CARGO = {
+  aluno: 'Aluno(a)',
+  secretaria: 'Secretaria',
+  professor: 'Professor(a)',
+  direcao: 'Direção',
+};
+
+// Apenas Secretaria e Direção cadastram alunos; Professor não.
+const CARGOS_COM_CADASTRO = ['secretaria', 'direcao'];
 
 function criarSessoes(mensagens) {
   const sessoes = [];
@@ -48,7 +63,7 @@ function formatarData(iso) {
   return `${dia}, ${data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export default function ChatScreen({ usuario, onSair }) {
+export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = true }) {
   const [sessoes, setSessoes] = useState([]);
   const [sessaoAtiva, setSessaoAtiva] = useState(null);
   const [entrada, setEntrada] = useState('');
@@ -62,7 +77,10 @@ export default function ChatScreen({ usuario, onSair }) {
   const inputArquivo = useRef(null);
 
   const ehAluno = usuario.cargo === 'aluno';
+  const podeAnexar = usuario.cargo !== 'aluno';
+  const podeCadastrar = CARGOS_COM_CADASTRO.includes(usuario.cargo);
   const tituloAssistant = TITULO_POR_CARGO[usuario.cargo] || 'Assistente';
+  const rotuloCargo = ROTULO_POR_CARGO[usuario.cargo] || 'Assistente';
   const sessaoSelecionada = sessoes[sessaoAtiva] || null;
 
   function rolarParaOFim() {
@@ -207,18 +225,20 @@ export default function ChatScreen({ usuario, onSair }) {
           </ul>
         )}
 
-        <div className="sidebar-rodape">
-          <div className="usuario-resumo">
-            <span className="avatar">{usuario.nome?.charAt(0).toUpperCase()}</span>
-            <div>
-              <strong>{usuario.nome}</strong>
-              <small>{usuario.userId} · {ehAluno ? 'Aluno(a)' : 'Gestão'}</small>
+        {mostrarPerfilNaSidebar && (
+          <div className="sidebar-rodape">
+            <div className="usuario-resumo">
+              <span className="avatar">{usuario.nome?.charAt(0).toUpperCase()}</span>
+              <div>
+                <strong>{usuario.nome}</strong>
+                <small>{usuario.userId} · {rotuloCargo}</small>
+              </div>
             </div>
+            <button type="button" className="botao-sair" onClick={onSair}>
+              Sair
+            </button>
           </div>
-          <button type="button" className="botao-sair" onClick={onSair}>
-            Sair
-          </button>
-        </div>
+        )}
       </aside>
 
       <main className="area-chat">
@@ -228,7 +248,7 @@ export default function ChatScreen({ usuario, onSair }) {
             <p>{DESCRICAO_POR_CARGO[usuario.cargo]}</p>
           </div>
           <div className="cabecalho-acoes">
-            {!ehAluno && (
+            {podeCadastrar && (
               <button
                 type="button"
                 className="botao-cadastrar"
@@ -238,7 +258,7 @@ export default function ChatScreen({ usuario, onSair }) {
               </button>
             )}
             <span className={`selo-cargo selo-${ehAluno ? 'aluno' : 'gestao'}`}>
-              {ehAluno ? 'Tutor' : 'Gestão'}
+              {rotuloCargo}
             </span>
           </div>
         </header>
@@ -281,7 +301,7 @@ export default function ChatScreen({ usuario, onSair }) {
         {erro && <p className="erro-box chat-erro">{erro}</p>}
 
         <form onSubmit={enviar} className="entrada">
-          {!ehAluno && arquivo && (
+          {podeAnexar && arquivo && (
             <button
               type="button"
               className="arquivo-chip"
@@ -295,7 +315,7 @@ export default function ChatScreen({ usuario, onSair }) {
             </button>
           )}
           <div className="entrada-linha">
-            {!ehAluno && (
+            {podeAnexar && (
               <>
                 <input
                   ref={inputArquivo}

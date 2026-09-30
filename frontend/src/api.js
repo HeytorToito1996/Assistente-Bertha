@@ -10,7 +10,7 @@ async function apiFetch(caminho, opcoes = {}) {
   let dados = null;
   try {
     dados = await resposta.json();
-  } catch (_) {
+  } catch {
     // Corpo não é JSON; segue sem dados.
   }
 
@@ -44,6 +44,51 @@ export function criarUsuario(usuario) {
 
 export function enviarChat(payload) {
   return apiFetch('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// Histórico de planos de aula do professor (do mais recente para o mais antigo).
+export function buscarPlanejamentos(userId) {
+  return apiFetch(`/api/planejamentos/${encodeURIComponent(userId)}?limite=50`);
+}
+
+// Gera um plano de aula com a IA e devolve o plano já salvo.
+export function planejarAula(payload) {
+  return apiFetch('/api/planejar-aula', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ============================================================================
+//  PLANO DE AULA MENSAL (documento entregue a gestão)
+// ============================================================================
+
+// Componentes, séries e bimestres existentes nas planilhas de escopo-sequência.
+// Sem argumentos devolve tudo; com `etapa`, devolve só aquele segmento.
+export function buscarEscopo(etapa) {
+  const query = etapa ? `?etapa=${encodeURIComponent(etapa)}` : '';
+  return apiFetch(`/api/escopo${query}`);
+}
+
+// disciplinas dentro de um curso do Ensino Técnico (ex.: Administração tem
+// "Introdução à Administração" e "Matemática Aplicada").
+export function buscarDisciplinas({ etapa, componente, serie, bimestre, anoDoTecnico }) {
+  const params = new URLSearchParams();
+  if (etapa) params.set('etapa', etapa);
+  if (componente) params.set('componente', componente);
+  if (serie) params.set('serie', serie);
+  if (bimestre) params.set('bimestre', String(bimestre));
+  if (anoDoTecnico) params.set('anoDoTecnico', String(anoDoTecnico));
+  return apiFetch(`/api/escopo/disciplinas?${params.toString()}`);
+}
+
+// Monta o documento do plano de aula. `refinar` pede à IA que reescreva
+// metodologia, recuperação, recursos e flexibilização.
+export function gerarPlanoAula(payload) {
+  return apiFetch('/api/plano-aula', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
