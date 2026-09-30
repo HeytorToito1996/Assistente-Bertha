@@ -1,0 +1,27 @@
+{
+  "name": "assistente-escolar-backend",
+  "version": "1.0.0",
+  "description": "API REST do Assistente Virtual com IA para Escola - Express + Firebase Admin + Google Gemini",
+  "main": "server.js",
+  "license": "MIT",
+  "author": "",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed:usuarios": "node seed-usuarios.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.21.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.4.0",
+    "mammoth": "^1.12.2",
+    "word-extractor": "^1.0.4",
+    "xlsx": "^0.18.5"
+  }
+}

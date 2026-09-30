@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dona Bertha 🏫 // Assistente Virtual Escolar Inteligente</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Folha de Estilos -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ================================================================= -->
+  <!-- TELA 1: PÁGINA DE LOGIN (SPA View)                                -->
+  <!-- ================================================================= -->
+  <main id="loginScreen" class="screen-view login-screen">
+    <div class="login-wrapper">
+      
+      <!-- Cabeçalho Institucional / Branding -->
+      <header class="login-header">
+        <div class="brand-badge">
+          <span class="brand-icon">🏫</span>
+          <span class="badge-tag">Portal Acadêmico 2.0</span>
+        </div>
+        <h1 class="brand-title">Dona Bertha</h1>
+        <p class="brand-subtitle">Assistente Virtual Escolar Inteligente</p>
+      </header>
+
+      <!-- Cartão Principal de Login -->
+      <div class="login-card">
+        
+        <!-- Abas / Toggles de Seleção de Perfil -->
+        <nav class="auth-tabs" role="tablist" aria-label="Opções de Acesso">
+          <button type="button" class="tab-btn active" id="tabStudent" role="tab" aria-selected="true" aria-controls="studentForm">
+            <i data-lucide="graduation-cap" class="tab-icon"></i>
+            <span>Alunos</span>
+          </button>
+          <button type="button" class="tab-btn" id="tabStaff" role="tab" aria-selected="false" aria-controls="staffForm">
+            <i data-lucide="briefcase" class="tab-icon"></i>
+            <span>Administração / Professores</span>
+          </button>
+        </nav>
+
+        <!-- Formulário da Aba 1: Alunos -->
+        <form id="studentForm" class="auth-form" role="tabpanel" aria-labelledby="tabStudent">
+          <div class="form-row ra-row">
+            <div class="form-group flex-3">
+              <label for="studentRa">RA (Registro Acadêmico)</label>
+              <div class="input-wrap">
+                <i data-lucide="id-card" class="input-icon"></i>
+                <input type="text" id="studentRa" placeholder="Ex: 12345678" inputmode="numeric" required>
+              </div>
+            </div>
+            <div class="form-group flex-1">
+              <label for="studentRaDigit">Dígito</label>
+              <div class="input-wrap">
+                <input type="text" id="studentRaDigit" placeholder="Ex: 9" maxlength="2" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="studentPassword">Senha</label>
+            <div class="input-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input type="password" id="studentPassword" placeholder="Sua senha de acesso" required>
+              <button type="button" class="btn-toggle-pwd" data-target="studentPassword" aria-label="Mostrar senha">
+                <i data-lucide="eye" class="pwd-icon"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary btn-submit">
+            <span>Entrar como Aluno</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+
+          <!-- Atalho para teste rápido do avaliador -->
+          <div class="quick-demo-box">
+            <span class="demo-label">Acesso rápido para avaliação:</span>
+            <button type="button" class="btn-demo" id="btnDemoStudent">
+              <i data-lucide="zap"></i> Preencher dados de Aluno Demo
+            </button>
+          </div>
+        </form>
+
+        <!-- Formulário da Aba 2: Administração / Professores -->
+        <form id="staffForm" class="auth-form hidden" role="tabpanel" aria-labelledby="tabStaff">
+          <div class="form-group">
+            <label for="staffRoleSelect">Cargo / Perfil</label>
+            <div class="input-wrap select-wrap">
+              <i data-lucide="user-check" class="input-icon"></i>
+              <select id="staffRoleSelect" required>
+                <option value="professor" selected>Professor(a)</option>
+                <option value="secretaria">Secretaria / Gestão Escolar</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="staffEmail">E-mail ou Usuário Institucional</label>
+            <div class="input-wrap">
+              <i data-lucide="mail" class="input-icon"></i>
+              <input type="text" id="staffEmail" placeholder="ex: professor@escola.sp.gov.br" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="staffPassword">Senha</label>
+            <div class="input-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input type="password" id="staffPassword" placeholder="Sua senha institucional" required>
+              <button type="button" class="btn-toggle-pwd" data-target="staffPassword" aria-label="Mostrar senha">
+                <i data-lucide="eye" class="pwd-icon"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary btn-submit">
+            <span>Entrar como Colaborador</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+
+          <!-- Atalhos para teste rápido do avaliador -->
+          <div class="quick-demo-box">
+            <span class="demo-label">Acesso rápido para avaliação:</span>
+            <div class="demo-buttons-group">
+              <button type="button" class="btn-demo" id="btnDemoTeacher">
+                <i data-lucide="sparkles"></i> Demo Professor
+              </button>
+              <button type="button" class="btn-demo" id="btnDemoStaff">
+                <i data-lucide="sparkles"></i> Demo Secretaria
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+
+      <!-- Rodapé da Tela de Login -->
+      <footer class="login-footer">
+        <p>🔒 Ambiente escolar seguro e criptografado</p>
+        <span class="footer-separator">•</span>
+        <p>Prefeitura Municipal & Rede de Ensino</p>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- TELA 2: INTERFACE DO CHAT ("Dona Bertha") (SPA View)               -->
+  <!-- ================================================================= -->
+  <div id="chatScreen" class="screen-view chat-screen hidden">
+    
+    <!-- Backdrop para fechamento da sidebar em dispositivos móveis -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+    <!-- --------------------------------------------------------------- -->
+    <!-- BARRA LATERAL (SIDEBAR)                                         -->
+    <!-- --------------------------------------------------------------- -->
+    <aside id="chatSidebar" class="chat-sidebar">
+      
+      <!-- Topo da Sidebar: Identidade do Sistema -->
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="brand-avatar">🏫</div>
+          <div class="brand-meta">
+            <h2 class="brand-name">Dona Bertha</h2>
+            <span class="brand-tag">IA Escolar</span>
+          </div>
+        </div>
+        <button id="btnCloseSidebarMobile" class="btn-icon-close mobile-only" aria-label="Fechar menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Ações Rápidas da Sidebar -->
+      <div class="sidebar-action-wrap">
+        <button id="btnNewChat" class="btn-new-chat">
+          <i data-lucide="plus-circle"></i>
+          <span>Novo Atendimento</span>
+        </button>
+      </div>
+
+      <!-- Sugestões Contextuais / Recursos Rápidos -->
+      <div class="sidebar-topics">
+        <span class="topics-title">Tópicos Frequentes</span>
+        <div id="quickTopicsContainer" class="topics-list">
+          <!-- Inserido dinamicamente conforme o cargo -->
+        </div>
+      </div>
+
+      <!-- Rodapé da Sidebar: Perfil do Usuário e Logout -->
+      <div class="sidebar-footer">
+        <div class="user-profile-card">
+          <div id="userAvatarBadge" class="user-avatar">AL</div>
+          <div class="user-info">
+            <span id="userNameDisplay" class="user-name">Usuário</span>
+            <span id="userRoleBadge" class="user-role-badge">Aluno</span>
+          </div>
+          <button id="btnLogout" class="btn-logout" title="Sair da Sessão" aria-label="Sair">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- --------------------------------------------------------------- -->
+    <!-- ÁREA PRINCIPAL DO CHAT                                          -->
+    <!-- --------------------------------------------------------------- -->
+    <section class="chat-main-area">
+      
+      <!-- Cabeçalho Superior da Área de Chat -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button id="btnToggleSidebar" class="btn-icon-menu mobile-only" aria-label="Abrir menu lateral">
+            <i data-lucide="menu"></i>
+          </button>
+          
+          <div class="ai-avatar-wrap">
+            <div class="ai-avatar">👵🏻</div>
+            <span class="status-pulse-dot" title="Dona Bertha está online"></span>
+          </div>
+
+          <div class="ai-status-meta">
+            <h3 class="ai-name">Dona Bertha</h3>
+            <p class="ai-status-text">
+              <span class="status-dot"></span>
+              <span>Online • Pronta para ajudar</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div id="roleIndicatorChip" class="role-indicator-chip">
+            <i data-lucide="shield-check"></i>
+            <span id="roleIndicatorText">Perfil Aluno</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Janela de Histórico de Mensagens com Auto-scroll -->
+      <div id="chatMessages" class="chat-messages-container" role="log" aria-live="polite">
+        <!-- As mensagens serão inseridas dinamicamente via JavaScript -->
+      </div>
+
+      <!-- Barra de Digitação Inferior -->
+      <footer class="chat-composer-footer">
+        
+        <!-- Preview de Arquivo Anexado (Antes do envio) -->
+        <div id="attachmentPreview" class="attachment-preview hidden">
+          <div class="preview-card">
+            <div class="preview-icon">
+              <i data-lucide="file-text"></i>
+            </div>
+            <div class="preview-meta">
+              <span id="previewFileName" class="preview-name">documento.pdf</span>
+              <span id="previewFileSize" class="preview-size">0 KB</span>
+            </div>
+            <button type="button" id="btnRemoveAttachment" class="preview-remove" title="Remover anexo" aria-label="Remover anexo">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Box Principal -->
+        <form id="chatForm" class="composer-form">
+          
+          <!-- Input oculto para upload de arquivo -->
+          <input 
+            type="file" 
+            id="fileInput" 
+            class="hidden-file-input" 
+            accept=".csv, .pdf, .txt, .xlsx, .xls, .doc, .docx, image/*"
+          >
+
+          <div class="composer-inner">
+            
+            <!-- Botão de Upload de Arquivo (Clipe): Visível SOMENTE para Administração / Professores -->
+            <button 
+              type="button" 
+              id="btnUploadFile" 
+              class="btn-composer-action file-upload-btn" 
+              title="Anexar arquivo (.csv, .pdf, etc.)"
+              aria-label="Anexar arquivo"
+            >
+              <i data-lucide="paperclip"></i>
+            </button>
+
+            <!-- Campo de Texto (Auto-expansível) -->
+            <textarea 
+              id="messageInput" 
+              class="composer-textarea" 
+              placeholder="Envie uma pergunta para a Dona Bertha..." 
+              rows="1"
+              required
+            ></textarea>
+
+            <!-- Botão de Enviar Mensagem -->
+            <button 
+              type="submit" 
+              id="btnSendMessage" 
+              class="btn-send-message" 
+              title="Enviar mensagem"
+              aria-label="Enviar mensagem"
+            >
+              <i data-lucide="send"></i>
+            </button>
+
+          </div>
+
+          <div class="composer-disclaimer">
+            <i data-lucide="info" class="disclaimer-icon"></i>
+            <span>Dona Bertha é uma inteligência artificial educacional. Em caso de dúvidas oficiais, consulte a secretaria.</span>
+          </div>
+
+        </form>
+
+      </footer>
+
+    </section>
+
+  </div>
+
+  <!-- Container de Notificações / Toasts -->
+  <div id="toastContainer" class="toast-container" aria-live="assertive"></div>
+
+  <!-- Script Principal Integrado -->
+  <script src="script.js"></script>
+</body>
+</html>

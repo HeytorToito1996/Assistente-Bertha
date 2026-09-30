@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exemplo de Consumo da API — Assistente Virtual Escolar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #f4f6fb; color: #222; padding: 24px; }
+    main { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    p.sub { color: #555; margin-bottom: 20px; font-size: 14px; }
+    .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card h2 { font-size: 16px; margin-bottom: 12px; border-left: 4px solid #4f46e5; padding-left: 10px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+    input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical; }
+    button { margin-top: 14px; padding: 10px 18px; border: 0; border-radius: 6px; background: #4f46e5; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #4338ca; }
+    button:disabled { background: #a5a5a5; cursor: not-allowed; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; margin-top: 14px; font-size: 12px; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+    .badge.aluno { background: #dcfce7; color: #15803d; }
+    .badge.gestao { background: #dbeafe; color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Exemplo de Consumo da API REST</h1>
+    <p class="sub">
+      Endpoint único: <b>POST /api/chat</b> — corpo <code>{ userId, mensagem, arquivoBase64?, mimeType? }</code> — resposta <code>{ resposta }</code>.<br />
+      Altere a constante <b>API_URL</b> abaixo se sua API estiver em outro endereço.
+    </p>
+
+    <!-- ============ DEMO A) MENSAGEM SIMPLES (ALUNO) ============ -->
+    <section class="card">
+      <h2>A) Mensagem simples de texto — perfil ALUNO <span class="badge aluno">Tutor</span></h2>
+      <label for="userIdAluno">userId (documento existente na coleção "usuarios" com cargo: "aluno")</label>
+      <input id="userIdAluno" value="ALUNO-001" />
+      <label for="mensagemAluno">Mensagem</label>
+      <textarea id="mensagemAluno" rows="2">Pode me ajudar a resolver o exercício de Bhaskara da apostila?</textarea>
+      <button id="btnAluno">Enviar mensagem simples</button>
+      <pre id="resultadoAluno">(resposta da API aparecerá aqui)</pre>
+    </section>
+
+    <!-- ============ DEMO B) CSV EM BASE64 (GESTÃO) ============ -->
+    <section class="card">
+      <h2>B) Enviar arquivo local (CSV / XLSX / TXT / PDF / DOCX) — perfil GESTÃO <span class="badge gestao">Analista</span></h2>
+      <label for="userIdGestao">userId (documento com cargo: "secretaria" ou "professor")</label>
+      <input id="userIdGestao" value="SEC-001" />
+      <label for="mensagemGestao">Mensagem (instrução sobre o arquivo)</label>
+      <textarea id="mensagemGestao" rows="2">Analise a frequência desta turma e aponte os alunos com mais de 3 faltas.</textarea>
+      <label for="arquivoCsv">Selecione o arquivo (planilha, texto, PDF ou documento Word)</label>
+      <input id="arquivoCsv" type="file" accept=".csv,.xlsx,.xls,.txt,.html,.md,.pdf,.doc,.docx,text/*,application/pdf" />
+      <button id="btnGestao">Ler CSV e enviar à API</button>
+      <pre id="resultadoGestao">(resposta da API aparecerá aqui)</pre>
+    </section>
+  </main>
+
+  <script>
+    // ============================================================
+    //  BASE DA API — ajuste consoante onde seu back-end está rodando
+    // ============================================================
+    const API_URL = 'http://localhost:3000';
+
+    // ============================================================
+    //  FUNÇÃO GENÉRICA: faz o POST em /api/chat com tratamento de erro
+    // ============================================================
+    async function chamarApiChat(payload) {
+      const respostaFetch = await fetch(`${API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      // Tenta interpretar o corpo como JSON; se falhar, monta uma mensagem interna.
+      let dados = null;
+      try {
+        dados = await respostaFetch.json();
+      } catch (_) {
+        throw new Error(`Resposta ${respostaFetch.status} sem corpo JSON válido da API.`);
+      }
+
+      if (!respostaFetch.ok) {
+        // API sempre devolve JSON de erro: { erro, detalhes? }
+        throw new Error(
+          dados?.erro || `Falha na requisição (HTTP ${respostaFetch.status}).`
+        );
+      }
+      return dados;
+    }
+
+    // ============================================================
+    //  A) MENSAGEM SIMPLES DE TEXTO (perfil aluno -> Tutor)
+    // ============================================================
+    document.getElementById('btnAluno').addEventListener('click', async () => {
+      const btn = document.getElementById('btnAluno');
+      const pre = document.getElementById('resultadoAluno');
+      const userId = document.getElementById('userIdAluno').value.trim();
+      const mensagem = document.getElementById('mensagemAluno').value.trim();
+
+      if (!userId || !mensagem) {
+        pre.textContent = 'Preencha o userId e a mensagem.';
+        return;
+      }
+
+      btn.disabled = true;
+      pre.textContent = 'Enviando...';
+
+      try {
+        // ---- POST em /api/chat com texto puro ----
+        const dados = await chamarApiChat({ userId, mensagem });
+        pre.textContent = `RESPOSTA DA IA:\n${dados.resposta}`;
+      } catch (erro) {
+        pre.textContent = `ERRO: ${erro.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ============================================================
+    //  B) LER CSV LOCAL, CONVERTER PARA BASE64 E ENVIAR (gestão)
+    // ============================================================
+    // Converte um File local em Base64 SEM o prefixo "data:*;base64,".
+    function arquivoParaBase64(arquivo) {
+      return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => {
+          // Ex.: "data:text/csv;base64,Q29udGV1ZG8sQ..." -> removemos o prefixo
+          const resultado = String(leitor.result);
+          const base64 = resultado.split(',')[1];
+          if (!base64) {
+            reject(new Error('Falha ao extrair o Base64 do arquivo.'));
+            return;
+          }
+          resolve(base64);
+        };
+        leitor.onerror = () => reject(new Error('Falha ao ler o arquivo local.'));
+        leitor.readAsDataURL(arquivo);
+      });
+    }
+
+    document.getElementById('btnGestao').addEventListener('click', async () => {
+      const btn = document.getElementById('btnGestao');
+      const pre = document.getElementById('resultadoGestao');
+      const userId = document.getElementById('userIdGestao').value.trim();
+      const mensagem = document.getElementById('mensagemGestao').value.trim();
+      const arquivo = document.getElementById('arquivoCsv').files[0];
+
+      if (!userId || !mensagem) {
+        pre.textContent = 'Preencha o userId e a mensagem.';
+        return;
+      }
+      if (!arquivo) {
+        pre.textContent = 'Selecione um arquivo CSV.';
+        return;
+      }
+
+      btn.disabled = true;
+      pre.textContent = 'Lendo arquivo e enviando...';
+
+      try {
+        // 1) Lê o arquivo local e converte para Base64 (FileReader)
+        const arquivoBase64 = await arquivoParaBase64(arquivo);
+
+        // 2) Define o MIME type (pode vir vazio no navegador; com "fileName"
+        //    o back-end identifica o formato pela extensão do arquivo)
+        const mimeType = arquivo.type || 'application/octet-stream';
+
+        // 3) POST em /api/chat com o arquivo no corpo (padrão inlineData).
+        //    fileName é opcional e ajuda o back-end a identificar o formato
+        //    caso o navegador não informe o mimeType corretamente.
+        const dados = await chamarApiChat({
+          userId,
+          mensagem,
+          arquivoBase64,
+          mimeType,
+          fileName: arquivo.name,
+        });
+
+        pre.textContent =
+          `ARQUIVO LIDO: ${arquivo.name} (${(arquivo.size / 1024).toFixed(1)} KB)\n` +
+          `MIME TYPE: ${mimeType}\n` +
+          `--------------------------------------------------\n` +
+          `RESPOSTA DA IA:\n${dados.resposta}`;
+      } catch (erro) {
+        pre.textContent = `ERRO: ${erro.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
