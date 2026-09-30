@@ -39,9 +39,24 @@ function criarSessoes(mensagens) {
 
   for (const mensagem of mensagens) {
     const tempo = mensagem.criadoEm ? new Date(mensagem.criadoEm).getTime() : Date.now();
-    const ehNova = !atual || (tempoAnterior !== null && tempo - tempoAnterior > GAP_DE_NOVA_SESSAO_MS);
+    const sessionId = mensagem.sessionId;
+    
+    // É nova se: 1) não tem sessão atual, 2) tem sessionId diferente da atual, 
+    // ou 3) não tem sessionId e passou 30 minutos
+    let ehNova = false;
+    if (!atual) {
+      ehNova = true;
+    } else if (sessionId && atual.id !== sessionId) {
+      ehNova = true;
+    } else if (!sessionId && !atual.id.startsWith('sessao-') && atual.id !== sessionId) {
+      // Se a atual tem um ID real mas essa mensagem não tem, ou vice-versa (fallback)
+      ehNova = true;
+    } else if (!sessionId && tempoAnterior !== null && tempo - tempoAnterior > GAP_DE_NOVA_SESSAO_MS) {
+      ehNova = true;
+    }
+
     if (ehNova) {
-      atual = { id: `sessao-${sessoes.length}`, inicio: tempo, mensagens: [mensagem] };
+      atual = { id: sessionId || `sessao-${sessoes.length}`, inicio: tempo, mensagens: [mensagem] };
       sessoes.push(atual);
     } else {
       atual.mensagens.push(mensagem);
@@ -126,32 +141,55 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
     setErro('');
     setEnviando(true);
 
+    const gerarId = () => Math.random().toString(36).substring(2, 15);
+    
+    // Determinar a sessão:
+    // Se sessaoAtiva é null (nova janela), cria um ID novo.
+    // Se é a sessão atual, pega o ID dela. Se for "sessao-X" (placeholder sem ID real), gera um novo.
+    let sessionIdAtual = null;
+    if (sessaoAtiva !== null && sessoes[sessaoAtiva]) {
+      sessionIdAtual = sessoes[sessaoAtiva].id;
+      if (sessionIdAtual.startsWith('sessao-')) {
+        sessionIdAtual = gerarId();
+      }
+    } else {
+      sessionIdAtual = gerarId();
+    }
+
     const mensagemLocal = {
       role: 'user',
       text: texto || '(enviou um arquivo)',
       fileName: arquivo?.name,
+      sessionId: sessionIdAtual,
+      criadoEm: new Date().toISOString(),
     };
 
-    const ultimoIndice = sessoes.length === 0 ? 0 : sessoes.length - 1;
+    let indiceAlvo = sessaoAtiva;
+
     setSessoes((anterior) => {
-      if (anterior.length === 0) {
-        return [{ id: 'sessao-0', inicio: Date.now(), mensagens: [mensagemLocal] }];
-      }
       const copia = [...anterior];
-      copia[copia.length - 1] = {
-        ...copia[copia.length - 1],
-        mensagens: [...copia[copia.length - 1].mensagens, mensagemLocal],
-      };
+      if (sessaoAtiva === null) {
+        // Criando nova sessão na interface
+        indiceAlvo = copia.length;
+        copia.push({ id: sessionIdAtual, inicio: Date.now(), mensagens: [mensagemLocal] });
+      } else {
+        // Adicionando à sessão ativa
+        copia[sessaoAtiva] = {
+          ...copia[sessaoAtiva],
+          id: sessionIdAtual, // atualiza ID se era placeholder
+          mensagens: [...copia[sessaoAtiva].mensagens, mensagemLocal],
+        };
+      }
       return copia;
     });
-    setSessaoAtiva(ultimoIndice);
+    setSessaoAtiva((prev) => indiceAlvo);
     setEntrada('');
     setArquivo(null);
     if (inputArquivo.current) inputArquivo.current.value = '';
     rolarParaOFim();
 
     try {
-      const payload = { userId: usuario.userId, mensagem: texto };
+      const payload = { userId: usuario.userId, mensagem: texto, sessionId: sessionIdAtual };
       if (arquivo) {
         payload.arquivoBase64 = await arquivoParaBase64(arquivo);
         payload.mimeType = arquivo.type || 'application/octet-stream';
@@ -161,13 +199,16 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
 
       setSessoes((anterior) => {
         const copia = [...anterior];
-        copia[copia.length - 1] = {
-          ...copia[copia.length - 1],
-          mensagens: [
-            ...copia[copia.length - 1].mensagens,
-            { role: 'model', text: resultado.resposta },
-          ],
-        };
+        const idx = copia.findIndex((s) => s.id === sessionIdAtual);
+        if (idx !== -1) {
+          copia[idx] = {
+            ...copia[idx],
+            mensagens: [
+              ...copia[idx].mensagens,
+              { role: 'model', text: resultado.resposta, sessionId: sessionIdAtual },
+            ],
+          };
+        }
         return copia;
       });
       setSessaoAtiva((anterior) => anterior ?? 0);
@@ -179,6 +220,26 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
       setErro(erroCapturado.message || 'Não foi possível enviar a mensagem.');
     } finally {
       setEnviando(false);
+    }
+  }
+
+  async function apagarSessao(evento, indiceSessao) {
+    evento.stopPropagation();
+    const sessao = sessoes[indiceSessao];
+    if (!sessao) return;
+    if (!window.confirm('Tem certeza que deseja excluir esta conversa?')) return;
+
+    try {
+      const { excluirHistorico } = await import('../api');
+      const messageIds = sessao.mensagens.map(m => m.id).filter(Boolean);
+      if (messageIds.length > 0) {
+        await excluirHistorico(usuario.userId, messageIds);
+      }
+      setSessoes((anterior) => anterior.filter((_, i) => i !== indiceSessao));
+      if (sessaoAtiva === indiceSessao) setSessaoAtiva(null);
+      else if (sessaoAtiva > indiceSessao) setSessaoAtiva((prev) => prev - 1);
+    } catch (e) {
+      alert('Erro ao excluir a conversa: ' + e.message);
     }
   }
 
@@ -194,7 +255,7 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
       <aside className="sidebar">
         <div className="sidebar-cabecalho">
           <strong>Conversas</strong>
-          <button type="button" className="botao-novo" title="Nova conversa" onClick={() => setEntrada('')}>
+          <button type="button" className="botao-novo" title="Nova conversa" onClick={() => { setEntrada(''); setSessaoAtiva(null); }}>
             +
           </button>
         </div>
@@ -210,14 +271,30 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
               const titulo =
                 primeira?.text || (sessao.mensagens[0]?.text || 'Conversa sem título');
               return (
-                <li key={sessao.id}>
+                <li key={sessao.id} style={{ display: 'flex', alignItems: 'center' }}>
                   <button
                     type="button"
                     className={`sessao-item ${indice === sessaoAtiva ? 'sessao-ativa' : ''}`}
                     onClick={() => setSessaoAtiva(indice)}
+                    style={{ flex: 1 }}
                   >
                     <span className="sessao-titulo">{titulo.slice(0, 40)}</span>
                     <span className="sessao-data">{formatarData(sessao.inicio)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    title="Excluir conversa"
+                    onClick={(e) => apagarSessao(e, indice)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--cor-texto-secundario)',
+                      cursor: 'pointer',
+                      padding: '0 8px',
+                      fontSize: '1.2rem',
+                    }}
+                  >
+                    🗑️
                   </button>
                 </li>
               );

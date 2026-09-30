@@ -324,22 +324,20 @@ export default function PlanoAulaScreen({ usuario }) {
 
           <label className="plano-campo">
             <span>Componente / disciplina *</span>
-            <input
-              type="text"
+            <select
               value={componente}
               onChange={(e) => setComponente(e.target.value)}
-              placeholder={ehTecnico ? 'Ex.: Administração' : 'Ex.: Matemática'}
-              list="plano-lista-componentes"
-            />
-            <datalist id="plano-lista-componentes">
+            >
+              <option value="">Selecione…</option>
               {componentesDisponiveis.map((c) => (
-                <option key={c.componente} value={c.componente} />
+                <option key={c.id || c.componente} value={c.componente}>
+                  {c.componente}
+                </option>
               ))}
-            </datalist>
-            <small>
-              Selecione da lista ou digite o nome. Componente fora da planilha o documento sai com as
-              datas e os campos em branco para você preencher.
-            </small>
+              {componente && !componentesDisponiveis.some((c) => c.componente === componente) && (
+                <option value={componente}>{componente}</option>
+              )}
+            </select>
           </label>
 
           {ehTecnico ? (
@@ -615,6 +613,16 @@ export default function PlanoAulaScreen({ usuario }) {
               </section>
 
               <section className="plano-doc-secao">
+                <h2>Aprendizagens essenciais</h2>
+                <CampoLongo
+                  lista={documento.aprendizagensEssenciais}
+                  onChange={(v) => alterarSecao('aprendizagensEssenciais', v)}
+                  vazio="Informe as aprendizagens essenciais esperadas para o período."
+                  dica="Um item por linha."
+                />
+              </section>
+
+              <section className="plano-doc-secao">
                 <h2>Competência técnica</h2>
                 <CampoLongo
                   lista={documento.competenciaTecnica}
@@ -637,7 +645,7 @@ export default function PlanoAulaScreen({ usuario }) {
               <section className="plano-doc-secao">
                 <h2>Habilidade (BNCC)</h2>
                 <CampoLongo
-                  lista={documento.habilidades.map(
+                  lista={(documento.habilidades || []).map(
                     (h) => (h.codigo && h.texto ? `${h.codigo} — ${h.texto}` : h.codigo || h.texto),
                   )}
                   onChange={(v) => alterarSecao('habilidades', v.map((texto) => ({ codigo: '', texto })))}
@@ -661,6 +669,26 @@ export default function PlanoAulaScreen({ usuario }) {
                   lista={documento.recuperacaoContinua}
                   onChange={(v) => alterarSecao('recuperacaoContinua', v)}
                   dica="De 4 a 5 itens."
+                />
+              </section>
+
+              <section className="plano-doc-secao">
+                <h2>Material digital</h2>
+                <CampoLongo
+                  lista={documento.materialDigital}
+                  onChange={(v) => alterarSecao('materialDigital', v)}
+                  vazio="Informe os materiais e recursos digitais a serem utilizados."
+                  dica="Um item por linha."
+                />
+              </section>
+
+              <section className="plano-doc-secao">
+                <h2>Material físico</h2>
+                <CampoLongo
+                  lista={documento.materialFisico}
+                  onChange={(v) => alterarSecao('materialFisico', v)}
+                  vazio="Informe os materiais físicos e impressos a serem utilizados."
+                  dica="Um item por linha."
                 />
               </section>
 

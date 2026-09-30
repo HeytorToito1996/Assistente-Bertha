@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --fundo: #f3f6fb;
   --card: #ffffff;
   --borda: #e2e8f0;
@@ -607,4 +607,10 @@ button {
 
 .cadastro-sucesso .modal-acoes {
   justify-content: center;
+}
+
+@media print {
+  .prof-nav {
+    display: none !important;
+  }
 }

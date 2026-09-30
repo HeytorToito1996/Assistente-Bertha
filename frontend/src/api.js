@@ -28,6 +28,13 @@ export function buscarHistorico(userId) {
   return apiFetch(`/api/historico/${encodeURIComponent(userId)}?limite=500`);
 }
 
+export function excluirHistorico(userId, messageIds) {
+  return apiFetch(`/api/historico/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ messageIds }),
+  });
+}
+
 export function login(email, senha) {
   return apiFetch('/api/login', {
     method: 'POST',

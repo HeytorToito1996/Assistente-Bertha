@@ -564,6 +564,34 @@ function obterIndice() {
   return indice;
 }
 
+// Componentes regulares da Base Nacional Comum que complementam os itinerarios
+const COMPONENTES_REGULARES = {
+  'Anos Finais': [
+    'Língua Portuguesa',
+    'Matemática',
+    'Ciências',
+    'História',
+    'Geografia',
+    'Arte',
+    'Educação Física',
+    'Língua Inglesa',
+  ],
+  'Ensino Medio': [
+    'Língua Portuguesa',
+    'Matemática',
+    'Física',
+    'Química',
+    'Biologia',
+    'História',
+    'Geografia',
+    'Filosofia',
+    'Sociologia',
+    'Arte',
+    'Educação Física',
+    'Língua Inglesa',
+  ],
+};
+
 // Componentes offered ao professor, agrupados por etapa. `series` e
 // `bimestres` sao os valores realmente presentes, para a tela nao oferecer
 // combinacoes inexistentes.
@@ -592,6 +620,33 @@ function montarComponentes(registros) {
     if (r.competenciaTecnica.length) item.temCompetencia = true;
   }
 
+  const seriesPadraoPorEtapa = {
+    'Anos Finais': ['6º ano', '7º ano', '8º ano', '9º ano'],
+    'Ensino Medio': ['1ª série', '2ª série', '3ª série'],
+  };
+
+  for (const [etapa, lista] of Object.entries(COMPONENTES_REGULARES)) {
+    const seriesPadrao = seriesPadraoPorEtapa[etapa] || [];
+    for (const nome of lista) {
+      const id = `${etapa}|${nome}`;
+      if (!mapa.has(id)) {
+        mapa.set(id, {
+          id,
+          etapa,
+          componente: nome,
+          abas: new Set(),
+          series: new Set(seriesPadrao),
+          bimestres: new Set([1, 2, 3, 4]),
+          temSemana: false,
+          temCompetencia: false,
+        });
+      } else {
+        const item = mapa.get(id);
+        seriesPadrao.forEach((s) => item.series.add(s));
+      }
+    }
+  }
+
   return ETAPAS.flatMap((etapa) =>
     [...mapa.values()]
       .filter((c) => c.etapa === etapa)
@@ -604,7 +659,8 @@ function montarComponentes(registros) {
         bimestres: [...c.bimestres].sort((a, b) => a - b),
         temSemana: c.temSemana,
         temCompetencia: c.temCompetencia,
-      })),
+      }))
+      .sort((a, b) => a.componente.localeCompare(b.componente, 'pt-BR')),
   );
 }
 
@@ -615,6 +671,9 @@ function montarSeries(registros) {
     if (!mapa.has(r.etapa)) mapa.set(r.etapa, new Set());
     mapa.get(r.etapa).add(r.serie);
   }
+  if (!mapa.has('Anos Finais')) mapa.set('Anos Finais', new Set());
+  ['6º ano', '7º ano', '8º ano', '9º ano'].forEach((s) => mapa.get('Anos Finais').add(s));
+
   return Object.fromEntries(
     [...mapa.entries()].map(([etapa, set]) => [
       etapa,

@@ -601,6 +601,7 @@
    dicas de edição somem, e as bordas dos campos viram linhas do formulário. */
 
 @media print {
+  .prof-nav,
   .plano-formulario,
   .plano-doc-barra,
   .plano-dica-doc,
@@ -608,12 +609,14 @@
     display: none !important;
   }
 
+  .prof-shell,
+  .prof-conteudo,
   .plano,
   .plano-conteudo {
-    display: block;
-    height: auto;
-    overflow: visible;
-    background: #ffffff;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
   .plano-doc {

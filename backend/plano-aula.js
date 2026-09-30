@@ -505,6 +505,28 @@ function recursosDidaticos(unidades) {
   return lista;
 }
 
+const APRENDIZAGENS_ESSENCIAIS_PADRAO = [
+  'Compreensão dos conceitos e princípios fundamentais abordados nas aulas do período.',
+  'Aplicação prática dos conteúdos em atividades investigativas, resolução de problemas e contextos do cotidiano.',
+  'Desenvolvimento de habilidades de análise crítica, argumentação e síntese a partir dos temas trabalhados.',
+  'Capacidade de estabelecer conexões entre os novos conhecimentos e as aprendizagens anteriores.',
+];
+
+const MATERIAL_DIGITAL_PADRAO = [
+  'Apresentações em slides e recursos multimídia projetados em sala',
+  'Plataforma CMSP (Centro de Mídias de SP) e Google Sala de Aula',
+  'Vídeos pedagógicos, animações e simuladores interativos online',
+  'Plataformas digitais de exercícios e apoio pedagógico (Khan Academy, formulários online)',
+];
+
+const MATERIAL_FISICO_PADRAO = [
+  'Livro didático do estudante e apostilas do componente',
+  'Caderno do estudante, folhas pautadas e folhas de papel sulfite',
+  'Fichas impressas de atividades, textos de apoio e roteiros práticos',
+  'Materiais de escrita, réguas e instrumentos de apoio individual',
+  'Cartazes, murais e materiais manipuláveis para dinâmicas em grupo',
+];
+
 const FLEXIBILIZACAO_CURRICULAR = [
   'Adequação de ritmo e temporalidade conforme o desempenho da turma, sem perda de conteúdo.',
   'Adaptação de atividades e materiais conforme as necessidades específicas de cada estudante, incluindo deficiência intelectual, TDAH, TEA e altas habilidades.',
@@ -586,6 +608,9 @@ function montarPlanoDeAula({
       : null,
     semanas,
     oQueSeraMinistrado: conteudo.oQueSeraMinistrado,
+    aprendizagensEssenciais: conteudo.objetivos.length
+      ? conteudo.objetivos
+      : [...APRENDIZAGENS_ESSENCIAIS_PADRAO],
     // A planilha do Ensino Técnico é a única com essas colunas. Nos demais
     // segmentos o campo sai com o padrão da Base Nacional Comum, para o
     // documento nunca ir à direção com um campo em branco.
@@ -599,6 +624,8 @@ function montarPlanoDeAula({
     habilidades: conteudo.habilidades,
     metodologias: metodologiasPara(componente),
     recuperacaoContinua: RECUPERACAO_CONTINUA,
+    materialDigital: [...MATERIAL_DIGITAL_PADRAO],
+    materialFisico: [...MATERIAL_FISICO_PADRAO],
     recursosDidaticos: recursosDidaticos(conteudo.unidades),
     flexibilizacaoCurricular: FLEXIBILIZACAO_CURRICULAR,
 

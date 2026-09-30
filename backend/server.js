@@ -337,6 +337,7 @@ async function obterHistoricoCompleto(userId, limite = 500) {
       id: doc.id,
       role: dados.role,
       text: dados.text,
+      sessionId: dados.sessionId || null,
       criadoEm: data && typeof data.toDate === 'function' ? data.toDate().toISOString() : data || null,
     };
   });
@@ -498,8 +499,11 @@ function extrairTextoResposta(resposta) {
 
 // Campos que a IA sempre reescreve.
 const CAMPOS_REFINAVEIS = [
+  { chave: 'aprendizagensEssenciais', rotulo: 'aprendizagens essenciais', regra: 'de 3 a 5 itens, destacando os conhecimentos e habilidades essenciais a serem consolidados no período' },
   { chave: 'metodologias', rotulo: 'metodologias', regra: 'de 4 a 6 itens, cada um começando com verbo no infinitivo' },
   { chave: 'recuperacaoContinua', rotulo: 'recuperação contínua', regra: 'de 4 a 5 itens, descrevendo o que o professor faz na prática' },
+  { chave: 'materialDigital', rotulo: 'material digital', regra: 'de 2 a 4 itens, citando recursos, plataformas ou materiais digitais concretos' },
+  { chave: 'materialFisico', rotulo: 'material físico', regra: 'de 2 a 4 itens, citando materiais impressos, livros e materiais manipuláveis concretos' },
   { chave: 'recursosDidaticos', rotulo: 'recursos didáticos', regra: 'de 4 a 6 itens, citando recursos concretos' },
   { chave: 'flexibilizacaoCurricular', rotulo: 'flexibilização curricular', regra: 'de 4 a 5 itens, cada um no formato "Rótulo: descrição", cobrindo adequação de ritmo, adaptação de atividades, organização flexível do agrupamento e meios de avaliação diversificados' },
 ];
@@ -685,19 +689,26 @@ async function chamarGeminiComRetry(contents, systemInstruction, opcoes = {}) {
 }
 
 // Grava a pergunta do usuário e a resposta da IA na subcoleção de histórico.
-async function salvarHistorico(userId, pergunta, resposta) {
+async function salvarHistorico(userId, pergunta, resposta, sessionId = null) {
   const ref = db.collection('historicos').doc(userId).collection('mensagens');
   const batch = db.batch();
-  batch.set(ref.doc(), {
+  
+  const msgUser = {
     role: 'user',
     text: pergunta,
     criadoEm: FieldValue.serverTimestamp(),
-  });
-  batch.set(ref.doc(), {
+  };
+  if (sessionId) msgUser.sessionId = sessionId;
+  batch.set(ref.doc(), msgUser);
+
+  const msgModel = {
     role: 'model',
     text: resposta,
     criadoEm: FieldValue.serverTimestamp(),
-  });
+  };
+  if (sessionId) msgModel.sessionId = sessionId;
+  batch.set(ref.doc(), msgModel);
+
   await batch.commit();
 }
 
@@ -1042,6 +1053,7 @@ app.post('/api/chat', async (req, res) => {
       arquivoBase64 = null,
       mimeType = null,
       fileName = null,
+      sessionId = null,
     } = req.body || {};
 
     // ---- Validações de entrada -------------------------------------------
@@ -1111,7 +1123,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ---- 6) Salvar a pergunta e a resposta no Firestore --------------------
-    await salvarHistorico(userId, mensagem.trim(), textoResposta);
+    await salvarHistorico(userId, mensagem.trim(), textoResposta, sessionId);
 
     // ---- 7) Retornar a resposta -------------------------------------------
     return res.json({ resposta: textoResposta });
@@ -1553,6 +1565,39 @@ app.post('/api/plano-aula', async (req, res) => {
   } catch (error) {
     console.error('[ERRO] Falha em POST /api/plano-aula:', error);
     return res.status(500).json({ erro: 'Erro ao montar o plano de aula.', detalhes: error.message });
+  }
+});
+
+// Exclui um conjunto de mensagens do histórico (uma conversa/sessão inteira).
+app.delete('/api/historico/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { messageIds } = req.body || {};
+    if (!userId || !userId.trim()) {
+      return res.status(400).json({ erro: 'O campo "userId" é obrigatório.' });
+    }
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({ erro: 'O campo "messageIds" deve ser um array com IDs.' });
+    }
+
+    const usuario = await obterUsuario(userId);
+    if (!usuario) {
+      return res.status(404).json({ erro: `Usuário "${userId}" não encontrado.` });
+    }
+
+    const ref = db.collection('historicos').doc(userId).collection('mensagens');
+    
+    for (let i = 0; i < messageIds.length; i += 500) {
+      const lote = messageIds.slice(i, i + 500);
+      const batch = db.batch();
+      lote.forEach((id) => batch.delete(ref.doc(id)));
+      await batch.commit();
+    }
+
+    return res.json({ sucesso: true, removidas: messageIds.length });
+  } catch (error) {
+    console.error('[ERRO] Falha em DELETE /api/historico/:userId:', error);
+    return res.status(500).json({ erro: 'Erro ao excluir as mensagens.', detalhes: error.message });
   }
 });
 
