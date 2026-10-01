@@ -7,7 +7,9 @@
     "backend": "npm --prefix backend run start",
     "backend:dev": "npm --prefix backend run dev",
     "frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend run build",
+    "setup": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "start": "npm run build && npm --prefix backend start"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

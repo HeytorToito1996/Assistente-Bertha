@@ -12,7 +12,7 @@ import {
   UserCheck,
   Zap,
 } from 'lucide-react';
-import { buscarUsuario, login } from '../api';
+import { buscarUsuario, criarUsuario, login } from '../api';
 import '../tela-login.css';
 
 /* ---------------------------------------------------------------------------
@@ -54,6 +54,13 @@ const NOMES_CARGO = {
 
 export default function LoginScreen({ onLogin }) {
   const [perfil, setPerfil] = useState('aluno');
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [nomeNovo, setNomeNovo] = useState('');
+  const [emailNovo, setEmailNovo] = useState('');
+  const [senhaNova, setSenhaNova] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [carregandoCadastro, setCarregandoCadastro] = useState(false);
+  const [erroCadastro, setErroCadastro] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -71,6 +78,26 @@ export default function LoginScreen({ onLogin }) {
   function trocarPerfil(novoPerfil) {
     setPerfil(novoPerfil);
     setErro('');
+  }
+
+  async function cadastrar(evento) {
+    evento.preventDefault();
+    const nome = nomeNovo.trim();
+    const emailLimpo = emailNovo.trim();
+    if (nome.length < 3) return setErroCadastro('Informe seu nome completo.');
+    if (senhaNova.length < 6) return setErroCadastro('A senha precisa ter pelo menos 6 caracteres.');
+    if (senhaNova !== confirmarSenha) return setErroCadastro('As senhas não são iguais.');
+
+    setErroCadastro('');
+    setCarregandoCadastro(true);
+    try {
+      const usuario = await criarUsuario({ nome, email: emailLimpo, senha: senhaNova, cargo: 'aluno' });
+      onLogin(usuario);
+    } catch (falha) {
+      setErroCadastro(falha.message || 'Não foi possível criar sua conta.');
+    } finally {
+      setCarregandoCadastro(false);
+    }
   }
 
   async function entrar(evento) {
@@ -91,7 +118,7 @@ export default function LoginScreen({ onLogin }) {
     setCarregando(true);
     try {
       const usuario = await login(emailLimpo, senha);
-      if (usuario.cargo !== perfil) {
+      if (usuario.cargo !== perfil && !(perfil === 'secretaria' && usuario.cargo === 'direcao')) {
         throw new Error(
           `Este e-mail pertence ao perfil "${NOMES_CARGO[usuario.cargo] || usuario.cargo}". ` +
             `Selecione a aba correspondente.`
@@ -149,6 +176,49 @@ export default function LoginScreen({ onLogin }) {
 
         {/* Cartão principal */}
         <div className="login-card">
+          {mostrarCadastro ? (
+            <section className="cadastro-publico" aria-labelledby="cadastro-publico-titulo">
+              <button type="button" className="cadastro-voltar" onClick={() => { setMostrarCadastro(false); setErroCadastro(''); }}>
+                ← Voltar ao login
+              </button>
+              <div className="cadastro-intro">
+                <span className="cadastro-icone" aria-hidden="true"><GraduationCap /></span>
+                <h2 id="cadastro-publico-titulo">Criar conta de aluno</h2>
+                <p>Preencha seus dados para começar a usar o tutor acadêmico.</p>
+              </div>
+              <form className="login-form cadastro-form" onSubmit={cadastrar}>
+                <div className="login-form-group">
+                  <label htmlFor="cadastro-nome">Nome completo</label>
+                  <div className="login-input-wrap"><UserCheck className="login-input-icon" aria-hidden="true" />
+                    <input id="cadastro-nome" type="text" value={nomeNovo} onChange={(e) => { setNomeNovo(e.target.value); setErroCadastro(''); }} placeholder="Seu nome" autoComplete="name" required minLength={3} />
+                  </div>
+                </div>
+                <div className="login-form-group">
+                  <label htmlFor="cadastro-email">E-mail</label>
+                  <div className="login-input-wrap"><Mail className="login-input-icon" aria-hidden="true" />
+                    <input id="cadastro-email" type="email" value={emailNovo} onChange={(e) => { setEmailNovo(e.target.value); setErroCadastro(''); }} placeholder="voce@escola.edu.br" autoComplete="email" required />
+                  </div>
+                </div>
+                <div className="login-form-group">
+                  <label htmlFor="cadastro-senha">Senha</label>
+                  <div className="login-input-wrap"><Lock className="login-input-icon" aria-hidden="true" />
+                    <input id="cadastro-senha" type="password" value={senhaNova} onChange={(e) => { setSenhaNova(e.target.value); setErroCadastro(''); }} placeholder="Mínimo 6 caracteres" autoComplete="new-password" minLength={6} required />
+                  </div>
+                </div>
+                <div className="login-form-group">
+                  <label htmlFor="cadastro-confirmar">Confirmar senha</label>
+                  <div className="login-input-wrap"><Lock className="login-input-icon" aria-hidden="true" />
+                    <input id="cadastro-confirmar" type="password" value={confirmarSenha} onChange={(e) => { setConfirmarSenha(e.target.value); setErroCadastro(''); }} placeholder="Digite a senha novamente" autoComplete="new-password" minLength={6} required />
+                  </div>
+                </div>
+                {erroCadastro && <p className="login-erro" role="alert"><AlertCircle aria-hidden="true" /><span>{erroCadastro}</span></p>}
+                <button type="submit" className="login-btn-submit" disabled={carregandoCadastro}>
+                  <span>{carregandoCadastro ? 'Criando conta…' : 'Criar conta de aluno'}</span><ArrowRight aria-hidden="true" />
+                </button>
+                <p className="cadastro-nota">O cadastro pela tela pública cria uma conta de aluno. Contas de gestão e professor são criadas pela administração.</p>
+              </form>
+            </section>
+          ) : <>
           {/* Abas de seleção de perfil */}
           <nav className="login-tabs" role="tablist" aria-label="Opções de acesso">
             {PERFIS.map((p) => {
@@ -269,12 +339,20 @@ export default function LoginScreen({ onLogin }) {
             </button>
           </form>
 
+          <div className="login-cadastro-prompt">
+            <span>Primeiro acesso?</span>
+            <button type="button" onClick={() => { setMostrarCadastro(true); setErroCadastro(''); }}>
+              Criar conta de aluno
+            </button>
+          </div>
+
           {erroSeed && (
             <p className="login-erro" role="alert" style={{ marginTop: 12 }}>
               <AlertCircle aria-hidden="true" />
               <span>{erroSeed}</span>
             </p>
           )}
+          </>}
         </div>
 
         {/* Rodapé */}

@@ -314,13 +314,13 @@ async function obterUsuario(userId) {
 }
 
 // Recupera as últimas N mensagens do histórico (ordem cronológica).
-async function obterHistoricoRecente(userId) {
+async function obterHistoricoRecente(userId, sessionId = null) {
   const ref = db.collection('historicos').doc(userId).collection('mensagens');
-  const snapshot = await ref.orderBy('criadoEm', 'desc').limit(MAX_HISTORICO).get();
+  const snapshot = await ref.orderBy('criadoEm', 'desc').limit(sessionId ? 500 : MAX_HISTORICO).get();
   if (snapshot.empty) {
     return [];
   }
-  return snapshot.docs.map((doc) => doc.data()).reverse();
+  return snapshot.docs.map((doc) => doc.data()).filter((m) => !sessionId || m.sessionId === sessionId).slice(0, MAX_HISTORICO).reverse();
 }
 
 // Recupera o histórico completo em ordem cronológica, com data em ISO string.
@@ -338,6 +338,7 @@ async function obterHistoricoCompleto(userId, limite = 500) {
       role: dados.role,
       text: dados.text,
       sessionId: dados.sessionId || null,
+      fileName: dados.fileName || null,
       criadoEm: data && typeof data.toDate === 'function' ? data.toDate().toISOString() : data || null,
     };
   });
@@ -689,7 +690,7 @@ async function chamarGeminiComRetry(contents, systemInstruction, opcoes = {}) {
 }
 
 // Grava a pergunta do usuário e a resposta da IA na subcoleção de histórico.
-async function salvarHistorico(userId, pergunta, resposta, sessionId = null) {
+async function salvarHistorico(userId, pergunta, resposta, sessionId = null, fileName = null) {
   const ref = db.collection('historicos').doc(userId).collection('mensagens');
   const batch = db.batch();
   
@@ -699,7 +700,9 @@ async function salvarHistorico(userId, pergunta, resposta, sessionId = null) {
     criadoEm: FieldValue.serverTimestamp(),
   };
   if (sessionId) msgUser.sessionId = sessionId;
-  batch.set(ref.doc(), msgUser);
+  if (fileName) msgUser.fileName = fileName;
+  const userRef = ref.doc();
+  batch.set(userRef, msgUser);
 
   const msgModel = {
     role: 'model',
@@ -707,9 +710,11 @@ async function salvarHistorico(userId, pergunta, resposta, sessionId = null) {
     criadoEm: FieldValue.serverTimestamp(),
   };
   if (sessionId) msgModel.sessionId = sessionId;
-  batch.set(ref.doc(), msgModel);
+  const modelRef = ref.doc();
+  batch.set(modelRef, msgModel);
 
   await batch.commit();
+  return [userRef.id, modelRef.id];
 }
 
 // ============================================================================
@@ -736,6 +741,8 @@ async function obterPlanosRecentes(userId, limite = 20) {
     const criadoEm = dados.criadoEm;
     return {
       id: doc.id,
+      tipo: dados.tipo || null,
+      documento: dados.documento || null,
       titulo: dados.titulo || 'Plano de aula',
       disciplina: dados.disciplina || '',
       serie: dados.serie || '',
@@ -998,12 +1005,12 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Cadastra um novo usuário (aluno/secretaria/professor).
+// Cadastro público: todo novo registro recebe cargo de aluno. Perfis privilegiados não podem ser escolhidos pelo cliente.
 app.post('/api/usuarios', async (req, res) => {
   try {
-    const { nome, email, senha, cargo = 'aluno' } = req.body || {};
+    const { nome, email, senha } = req.body || {};
     const nomeLimpo = String(nome || '').trim();
-    const cargoNormalizado = String(cargo || '').trim().toLowerCase();
+    const cargoNormalizado = 'aluno';
     const emailNormalizado = normalizarEmail(email);
 
     if (nomeLimpo.length < 3) {
@@ -1015,10 +1022,6 @@ app.post('/api/usuarios', async (req, res) => {
     if (typeof senha !== 'string' || senha.length < 6) {
       return res.status(400).json({ erro: 'A senha deve ter ao menos 6 caracteres.' });
     }
-    if (!CARGOS_VALIDOS.includes(cargoNormalizado)) {
-      return res.status(400).json({ erro: 'Cargo inválido. Use aluno, secretaria, professor ou direcao.' });
-    }
-
     const existente = await obterUsuarioPorEmail(emailNormalizado);
     if (existente) {
       return res.status(409).json({ erro: 'Já existe um usuário cadastrado com este e-mail.' });
@@ -1103,7 +1106,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ---- 3) Recuperar as últimas mensagens do histórico ---------------------
-    const historico = await obterHistoricoRecente(userId);
+    const historico = await obterHistoricoRecente(userId, sessionId);
 
     // ---- 4) Montar o prompt (texto + arquivo inline opcional) ---------------
     const novasPartes = [{ text: mensagem.trim() }];
@@ -1123,10 +1126,10 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ---- 6) Salvar a pergunta e a resposta no Firestore --------------------
-    await salvarHistorico(userId, mensagem.trim(), textoResposta, sessionId);
+    const messageIds = await salvarHistorico(userId, mensagem.trim(), textoResposta, sessionId, fileName);
 
     // ---- 7) Retornar a resposta -------------------------------------------
-    return res.json({ resposta: textoResposta });
+    return res.json({ resposta: textoResposta, messageIds });
   } catch (error) {
     // Erros de arquivo (tipo não suportado, falha na leitura/conversão) -> 400
     if (error.codigo === 'ARQUIVO_NAO_SUPORTADO' || error.codigo === 'ERRO_ARQUIVO') {
@@ -1600,6 +1603,40 @@ app.delete('/api/historico/:userId', async (req, res) => {
     return res.status(500).json({ erro: 'Erro ao excluir as mensagens.', detalhes: error.message });
   }
 });
+
+// Atualiza o documento revisado pelo professor.
+app.put('/api/plano-aula/:userId/:id', async (req, res) => {
+  try {
+    const { userId, id } = req.params;
+    const { documento } = req.body || {};
+    const usuario = await obterUsuario(userId);
+    if (!usuario || !CARGOS_PLANEJAMENTO.includes(extrairCargoDoUsuario(usuario))) {
+      return res.status(403).json({ erro: 'Apenas professores podem salvar este documento.' });
+    }
+    if (!documento || !documento.cabecalho || !Array.isArray(documento.semanas)) {
+      return res.status(400).json({ erro: 'Documento de plano de aula inválido.' });
+    }
+    const ref = colecaoAulas(userId).doc(id);
+    const atual = await ref.get();
+    if (!atual.exists || atual.get('tipo') !== 'plano-aula-mensal') {
+      return res.status(404).json({ erro: 'Plano de aula não encontrado.' });
+    }
+    await ref.update({ documento, atualizadoEm: FieldValue.serverTimestamp() });
+    return res.json({ sucesso: true, id });
+  } catch (error) {
+    console.error('[ERRO] Falha ao salvar revisão:', error.message);
+    return res.status(500).json({ erro: 'Não foi possível salvar as alterações.' });
+  }
+});
+
+const frontendDist = path.resolve(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('/{*pagina}', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 // ============================================================================
 //  TRATAMENTO DE ERROS / ROTA 404

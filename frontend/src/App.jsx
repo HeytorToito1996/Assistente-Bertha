@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './tela-planejamento.css';
 import './tela-plano-aula.css';
 import './tela-erro.css';
+import './acabamento.css';
 
 // Abas liberadas por cargo. Professor é o único com acesso ao planejamento.
 const ABAS_POR_CARGO = {
@@ -18,16 +19,28 @@ const ABAS_POR_CARGO = {
 };
 
 export default function App() {
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('bertha.usuario')) || null; }
+    catch { return null; }
+  });
+  function entrar(dados) {
+    sessionStorage.setItem('bertha.usuario', JSON.stringify(dados));
+    setUsuario(dados);
+  }
+  function sair() {
+    sessionStorage.removeItem('bertha.usuario');
+    setUsuario(null);
+    setAba('documento');
+  }
   const [aba, setAba] = useState('documento');
 
   if (!usuario) {
-    return <LoginScreen onLogin={setUsuario} />;
+    return <LoginScreen onLogin={entrar} />;
   }
 
   const abas = ABAS_POR_CARGO[usuario.cargo];
   if (!abas) {
-    return <ChatScreen usuario={usuario} onSair={() => setUsuario(null)} />;
+    return <ChatScreen usuario={usuario} onSair={sair} />;
   }
 
   return (
@@ -62,7 +75,7 @@ export default function App() {
               <small>Professor(a)</small>
             </div>
           </div>
-          <button type="button" className="botao-sair" onClick={() => setUsuario(null)}>
+          <button type="button" className="botao-sair" onClick={sair}>
             Sair
           </button>
         </div>
@@ -78,10 +91,17 @@ export default function App() {
           ) : aba === 'planos' ? (
             <PlanejamentoScreen usuario={usuario} />
           ) : (
-            <ChatScreen usuario={usuario} onSair={() => setUsuario(null)} mostrarPerfilNaSidebar={false} />
+            <ChatScreen usuario={usuario} onSair={sair} mostrarPerfilNaSidebar={false} />
           )}
         </ErrorBoundary>
       </div>
     </div>
   );
 }
+
+/*
+ V   V  III   CCC  TTTTT  OOO  RRRR
+ V   V   I   C      T   O   O R   R
+  V V    I   C      T   O   O RRRR
+   V    III   CCC   T    OOO  R   R
+*/

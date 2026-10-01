@@ -1,0 +1,95 @@
+:root { --principal: #215c51; --principal-forte: #174438; --fundo: #f4f6f2; --plan-accent: #215c51; --plan-accent-forte: #174438; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #5ca896; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+.chat { min-height: 0; }
+.sidebar { background: #fafbf8; width: 286px; min-width: 286px; }
+.sidebar-cabecalho { padding: 24px 20px 18px; }
+.sidebar-cabecalho strong { font-size: 17px; letter-spacing: -.3px; }
+.botao-novo { background: #e3eee7; color: #215c51; width: 34px; height: 34px; }
+.busca-conversas { margin: 16px 16px 8px; padding: 11px 12px; width: calc(100% - 32px); border: 1px solid var(--borda); border-radius: 10px; background: white; font: inherit; font-size: 13px; }
+.sessao-item { min-width: 0; padding: 13px 12px; }
+.sessao-ativa { background: #e3eee7; }
+.sessao-data { margin-top: 4px; }
+.chat-cabecalho { padding: 20px 28px; }
+.chat-cabecalho h2 { font-size: 19px; letter-spacing: -.4px; }
+.chat-cabecalho p { line-height: 1.5; margin-top: 5px; }
+.mensagens { padding: 28px max(24px, calc((100% - 900px) / 2)); gap: 18px; }
+.bolha { max-width: 88%; padding: 15px 19px; }
+.mensagem-modelo .bolha { box-shadow: 0 3px 12px #172c1f04; }
+.copiar-resposta { border: 0; background: transparent; padding: 8px 0 0; font-size: 11px; color: var(--texto-suave); display: block; }
+.estado-vazio { max-width: 600px; padding: 24px 0; }
+.estado-vazio h2 { color: var(--texto); font-size: 30px; font-weight: 650; letter-spacing: -1px; margin: 16px 0 8px; }
+.estado-vazio p { line-height: 1.6; }
+.sugestoes-chat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 28px; }
+.sugestoes-chat button { background: white; border: 1px solid #dbe4dc; border-radius: 12px; padding: 16px; font: inherit; font-size: 13px; text-align: left; color: #315d4e; line-height: 1.5; }
+.sugestoes-chat button:hover { border-color: #215c51; background: #f0f6f1; }
+.entrada { padding: 18px max(24px, calc((100% - 900px) / 2)); }
+.entrada-linha textarea { min-width: 0; }
+.botao-menu, .sidebar-overlay { display: none; }
+.erro-box { padding: 12px 14px; color: #9f2929; border: 1px solid #f1c5c5; background: #fff4f4; border-radius: 9px; font-size: 13px; }
+.campo { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 600; }
+.campo input { border: 1px solid var(--borda); border-radius: 8px; padding: 12px; font: inherit; }
+.botao-primario { padding: 10px 14px; border: 0; background: var(--principal); color: white; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.prof-nav-logo { object-fit: cover; }
+.prof-nav-aba { white-space: nowrap; }
+.prof-nav-aba-ativa { color: #215c51; }
+.prof-conteudo { min-height: 0; }
+.login-footer { flex-wrap: wrap; }
+@media (max-width: 1000px) {
+  .prof-nav { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+  .prof-nav-abas { order: 3; width: 100%; overflow-x: auto; }
+  .prof-nav-usuario { margin-left: auto; }
+  .plan-formulario { width: 330px; min-width: 330px; }
+}
+@media (max-width: 720px) {
+  html, body, #root { min-height: 100%; }
+  .chat { height: 100dvh; }
+  .prof-conteudo > .chat { height: 100%; }
+  .prof-shell { height: 100dvh; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; height: 100dvh; z-index: 60; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 12px 0 30px #0e24121a; }
+  .sidebar-aberta { transform: translateX(0); }
+  .sidebar-overlay { display: block; position: fixed; inset: 0; z-index: 59; background: #172c1f66; border: 0; }
+  .botao-menu { display: block; flex-shrink: 0; border: 1px solid var(--borda); background: white; border-radius: 9px; padding: 8px 10px; color: #215c51; font-size: 18px; }
+  .chat-cabecalho { padding: 14px 12px; gap: 10px; align-items: flex-start; }
+  .chat-cabecalho h2 { font-size: 16px; }
+  .chat-cabecalho p { font-size: 11px; }
+  .cabecalho-acoes { flex-direction: column; align-items: flex-end; gap: 6px; }
+  .botao-cadastrar { padding: 7px 9px; font-size: 10px; }
+  .selo-cargo { font-size: 10px; padding: 4px 7px; }
+  .mensagens { padding: 18px 12px; }
+  .bolha { max-width: 94%; font-size: 14px; padding: 12px 14px; }
+  .entrada { padding: 12px 10px max(12px, env(safe-area-inset-bottom)); }
+  .entrada-linha { gap: 7px; }
+  .entrada-linha textarea { font-size: 16px; }
+  .botao-enviar, .botao-anexar { flex-shrink: 0; width: 40px; height: 42px; }
+  .chat-erro { margin: 0 12px; }
+  .estado-vazio h2 { font-size: 26px; }
+  .sugestoes-chat { grid-template-columns: 1fr; margin-top: 20px; }
+  .sugestoes-chat button { padding: 12px 14px; }
+  .prof-nav-nome { font-size: 16px; }
+  .prof-nav-identidade strong { max-width: 105px; overflow: hidden; text-overflow: ellipsis; }
+  .prof-nav-identidade .avatar { display: none; }
+  .prof-nav-aba { font-size: 12px; padding: 10px; }
+  .plan, .plano { flex-direction: column; overflow: auto; }
+  .plan-formulario, .plano-formulario { width: 100%; min-width: 0; max-height: none; overflow: visible; border-right: 0; border-bottom: 1px solid var(--borda); }
+  .plan-conteudo, .plano-conteudo { flex: none; overflow: visible; min-height: 260px; }
+  .plan-detalhe-cabecalho { flex-wrap: wrap; padding: 20px 16px; }
+  .plan-detalhe-corpo { padding: 20px 16px; }
+  .plano-documento { min-width: 0; width: 100%; padding: 18px 12px; }
+  .plano-doc-grade { grid-template-columns: 1fr; }
+  .plano-doc-tabela { overflow-x: auto; }
+  .arquivo-chip { max-width: 100%; overflow-wrap: anywhere; }
+}
+@media print {
+  .sidebar, .entrada, .chat-cabecalho, .botao-menu { display: none !important; }
+  .plan-formulario, .plan-voltar, .plan-botao-copiar { display: none !important; }
+  .plan, .plan-conteudo, .prof-shell, .prof-conteudo { height: auto; overflow: visible; display: block; }
+  .plan-detalhe-corpo { padding: 0; }
+}
+@media (max-width: 720px) {
+  .plano-doc { margin: 16px 10px 30px; padding: 22px 14px; }
+  .plano-doc-barra { flex-wrap: wrap; padding: 12px; }
+  .plano-doc-acoes { flex-wrap: wrap; }
+  .plano-doc-ident { grid-template-columns: 1fr; }
+  .plano-doc-tabela { font-size: 11px; }
+}

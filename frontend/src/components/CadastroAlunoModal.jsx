@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { criarUsuario } from '../api';
 
 export default function CadastroAlunoModal({ onFechar }) {
@@ -10,6 +10,13 @@ export default function CadastroAlunoModal({ onFechar }) {
   const [erro, setErro] = useState('');
   const [cadastrado, setCadastrado] = useState(null);
   const nomeRef = useRef(null);
+
+  useEffect(() => {
+    nomeRef.current?.focus();
+    function fecharComEscape(evento) { if (evento.key === 'Escape') onFechar(); }
+    document.addEventListener('keydown', fecharComEscape);
+    return () => document.removeEventListener('keydown', fecharComEscape);
+  }, [onFechar]);
 
   async function cadastrar(evento) {
     evento.preventDefault();
@@ -57,9 +64,9 @@ export default function CadastroAlunoModal({ onFechar }) {
 
   return (
     <div className="modal-fundo" onClick={onFechar}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="cadastro-titulo" onClick={(e) => e.stopPropagation()}>
         <div className="modal-cabecalho">
-          <h3>Cadastrar aluno(a)</h3>
+          <h3 id="cadastro-titulo">Cadastrar aluno(a)</h3>
           <button type="button" className="modal-fechar" onClick={onFechar} title="Fechar">
             ×
           </button>
