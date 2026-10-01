@@ -1,3 +1,67 @@
+# Assistente Dona Bertha
+
+## Iniciar esta versão
+
+Requer Node.js 20.19+ ou 22.12+ (recomendado Node 24).
+Na pasta principal:
+
+```bash
+npm run setup
+npm start
+```
+
+Abra http://localhost:3000. O comando compila o front e o backend entrega a interface e a API na mesma porta.
+Para desenvolver com atualização automática, use `npm run dev` e abra http://localhost:5173.
+
+As configurações fornecidas para este projeto já estão em `backend/.env` e `backend/service-account-key.json`.
+As credenciais ficam exclusivamente no backend. Não publique esses dois arquivos nem o ZIP em repositório público.
+
+### Liberação do Firebase
+
+A verificação remota retornou `PERMISSION_DENIED`: a API do Cloud Firestore do projeto
+`assistente-bertha-22b74` está desativada ou ainda não foi usada.
+Abra https://console.firebase.google.com/project/assistente-bertha-22b74/firestore
+com a conta proprietária e crie/ative o banco Cloud Firestore.
+Se o banco já existir, habilite a API em
+https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=assistente-bertha-22b74.
+Aguarde a ativação propagar e reinicie o backend. Nenhum usuário ou histórico remoto foi alterado durante a validação.
+
+Os botões de avaliação apenas preenchem as credenciais; não criam usuários.
+Se os usuários de demonstração ainda não existirem, após liberar o Firestore execute:
+
+```bash
+npm --prefix backend run seed:usuarios
+```
+
+Os dados de acesso correspondem ao script existente: aluno `maria@escola.edu.br` / `aluno123`,
+gestão `ana@escola.edu.br` / `gestao123`, professor `paulo@escola.edu.br` / `prof2024`.
+
+### Front concluído nesta versão
+
+- Login por perfil e manutenção do acesso ao recarregar a aba; sair limpa a sessão.
+- Cadastro inicial de conta de aluno pela tela de login; o servidor define o cargo como aluno, sem permitir autoinscrição como professor ou gestão.
+- Chat com histórico, busca, novas conversas independentes, exclusão e cópia das respostas.
+- Envio de anexo sem texto adicional, validação de formato e limite de 20 MB.
+- Recuperação do texto e anexo quando o envio falha.
+- Cadastro de alunos para gestão e direção.
+- Planejamento didático e documento mensal com edição, gravação da revisão e impressão/PDF.
+- Navegação para celular e estilos de impressão.
+- Configuração opcional `VITE_API_URL` para front hospedado separado do backend.
+
+### Validação
+
+`node --check backend/server.js`, lint e build do frontend passaram.
+A API local respondeu corretamente em `/`, `/api/health`, `/api/escopo`, rota inexistente e validação de chat.
+Os fluxos de interface foram exercitados em DOM simulado com respostas de API isoladas, incluindo
+login dos três perfis, chat, sessões distintas, exclusão, anexo sem texto, falhas recuperáveis, cadastro e
+montagem, edição, gravação e reabertura de documento mensal com as planilhas reais do projeto.
+A chave do Gemini foi aceita na consulta autenticada de modelos disponíveis. O fluxo completo de chat com persistência depende da ativação do Firestore.
+Não foi possível validar visualmente em navegador neste ambiente.
+
+---
+
+## Documentação original
+
 # 🎒 Assistente Virtual Escolar
 
 Assistente escolar com IA: um **tutor acadêmico** para alunos, um **analista de gestão**

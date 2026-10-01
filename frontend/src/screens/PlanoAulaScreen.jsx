@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buscarDisciplinas, buscarEscopo, buscarPlanejamentos, gerarPlanoAula } from '../api';
+import { buscarDisciplinas, buscarEscopo, buscarPlanejamentos, gerarPlanoAula, salvarPlanoAula } from '../api';
 
 // Segmentos reconhecidos pelas planilhas de escopo-sequência. Os nomes com
 // acento são só para exibição: o back-end compara sem acento.
@@ -96,6 +96,8 @@ function CampoLongo({ label, lista, onChange, vazio = '—', dica, avisoPadrao }
 // ---------------------------------------------------------------------------
 
 export default function PlanoAulaScreen({ usuario }) {
+  const [salvando, setSalvando] = useState(false);
+  const [alterado, setAlterado] = useState(false);
   const [etapa, setEtapa] = useState('Anos Iniciais');
   const [componente, setComponente] = useState('');
   const [serie, setSerie] = useState('');
@@ -269,6 +271,7 @@ export default function PlanoAulaScreen({ usuario }) {
 
       setResultado(resposta);
       setDocumento(resposta.plano);
+      setAlterado(false);
       setAviso(resposta.aviso || '');
       recarregarHistorico();
     } catch (erroGeracao) {
@@ -280,16 +283,31 @@ export default function PlanoAulaScreen({ usuario }) {
 
   // ---- Edição do documento ----------------------------------------------
   function alterarSecao(campo, valor) {
+    setAlterado(true);
     setDocumento((anterior) => ({ ...anterior, [campo]: valor }));
   }
 
   function alterarSemana(indice, campo, valor) {
+    setAlterado(true);
     setDocumento((anterior) => ({
       ...anterior,
       semanas: anterior.semanas.map((semana, i) =>
         i === indice ? { ...semana, [campo]: valor } : semana,
       ),
     }));
+  }
+
+  async function salvarAlteracoes() {
+    if (!resultado?.id || salvando) return;
+    setSalvando(true);
+    setErro('');
+    try {
+      await salvarPlanoAula(usuario.userId, resultado.id, documento);
+      setAlterado(false);
+      setAviso('Alterações salvas.');
+      await recarregarHistorico();
+    } catch (falha) { setErro(falha.message); }
+    finally { setSalvando(false); }
   }
 
   function imprimir() {
@@ -483,7 +501,8 @@ export default function PlanoAulaScreen({ usuario }) {
                   <button
                     type="button"
                     onClick={() => {
-                      setResultado({ plano: item.documento, origem: 'documento salvo' });
+                      setResultado({ id: item.id, plano: item.documento, origem: 'documento salvo' });
+                      setAlterado(false);
                       setDocumento(item.documento);
                       setAviso('');
                     }}
@@ -517,7 +536,10 @@ export default function PlanoAulaScreen({ usuario }) {
                 )}
               </div>
               <div className="plano-doc-acoes">
-                <button type="button" className="plano-botao-secundario" onClick={() => setDocumento(null)}>
+                <button type="button" className="plano-botao-imprimir" disabled={!alterado || salvando || !resultado?.id} onClick={salvarAlteracoes}>
+                  {salvando ? 'Salvando…' : alterado ? 'Salvar alterações' : 'Salvo ✓'}
+                </button>
+                <button type="button" className="plano-botao-secundario" onClick={() => { if (!alterado || window.confirm('Fechar sem salvar as alterações?')) setDocumento(null); }}>
                   Fechar
                 </button>
                 <button type="button" className="plano-botao-imprimir" onClick={imprimir}>

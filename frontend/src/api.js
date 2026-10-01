@@ -1,23 +1,48 @@
 // Base vazia: o Vite faz proxy de "/api" para http://localhost:3000.
 // (Alternativa: apontar para a URL real do back-end em produção.)
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 async function apiFetch(caminho, opcoes = {}) {
-  const resposta = await fetch(caminho, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opcoes,
-  });
-
-  let dados = null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 240000);
   try {
-    dados = await resposta.json();
-  } catch {
-    // Corpo não é JSON; segue sem dados.
+    const resposta = await fetch(`${API_BASE}${caminho}`, {
+      ...opcoes,
+      headers: { 'Content-Type': 'application/json', ...opcoes.headers },
+      signal: controller.signal,
+    });
+    const dados = await resposta.json().catch(() => null);
+    if (!resposta.ok) {
+      throw new Error(dados?.erro || `Falha na requisição (HTTP ${resposta.status}).`);
+    }
+    if (!dados) throw new Error('O servidor retornou uma resposta inválida. Confira se o backend está iniciado.');
+    return dados;
+  } catch (erro) {
+    if (erro.name === 'AbortError') throw new Error('O servidor demorou para responder. Tente novamente.');
+    if (erro instanceof TypeError) throw new Error('Não foi possível conectar ao servidor. Confira sua conexão e se o backend está iniciado.');
+    throw erro;
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  if (!resposta.ok) {
-    throw new Error(dados?.erro || `Falha na requisição (HTTP ${resposta.status}).`);
-  }
-  return dados;
+export async function copiarTexto(texto) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(texto);
+  const campo = document.createElement('textarea');
+  campo.value = texto;
+  campo.style.position = 'fixed';
+  campo.style.opacity = '0';
+  document.body.appendChild(campo);
+  campo.select();
+  const copiado = document.execCommand('copy');
+  campo.remove();
+  if (!copiado) throw new Error('Selecione o texto e copie manualmente.');
+}
+
+export function validarArquivo(arquivo) {
+  if (arquivo.size > 20 * 1024 * 1024) throw new Error('O arquivo deve ter até 20 MB.');
+  if (!/\.(csv|xlsx?|txt|html?|md|pdf|docx?)$/i.test(arquivo.name)) throw new Error('Formato não suportado. Use PDF, Word, planilhas ou texto.');
 }
 
 export function buscarUsuario(userId) {
@@ -115,5 +140,10 @@ export function arquivoParaBase64(arquivo) {
     };
     leitor.onerror = () => reject(new Error('Falha ao ler o arquivo local.'));
     leitor.readAsDataURL(arquivo);
+  });
+}
+export function salvarPlanoAula(userId, id, documento) {
+  return apiFetch(`/api/plano-aula/${encodeURIComponent(userId)}/${encodeURIComponent(id)}`, {
+    method: 'PUT', body: JSON.stringify({ documento }),
   });
 }

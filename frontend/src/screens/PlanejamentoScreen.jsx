@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { arquivoParaBase64, buscarPlanejamentos, planejarAula } from '../api';
+import { arquivoParaBase64, buscarPlanejamentos, planejarAula, copiarTexto, validarArquivo } from '../api';
 
 // Materiais didáticos aceitos como apoio ao planejamento.
 const TIPOS_DE_ARQUIVO = '.pdf,.doc,.docx,.txt,.md,.html,.csv,.xlsx,.xls';
@@ -115,7 +115,7 @@ export default function PlanejamentoScreen({ usuario }) {
   async function recarregarPlanos() {
     try {
       const dados = await buscarPlanejamentos(usuario.userId);
-      setPlanos(dados.planos || []);
+      setPlanos((dados.planos || []).filter((p) => p.tipo !== 'plano-aula-mensal')); 
     } catch (erroCapturado) {
       setErro(erroCapturado.message || 'Não foi possível carregar o histórico de planos.');
     } finally {
@@ -178,6 +178,7 @@ export default function PlanejamentoScreen({ usuario }) {
   function selecionarArquivo(evento) {
     const escolhido = evento.target.files?.[0];
     if (!escolhido) return;
+    try { validarArquivo(escolhido); } catch (falha) { setErro(falha.message); evento.target.value = ''; return; }
     setArquivo(escolhido);
     setErro('');
   }
@@ -369,8 +370,7 @@ export default function PlanejamentoScreen({ usuario }) {
                 type="button"
                 className="plan-botao-copiar"
                 onClick={() =>
-                  navigator.clipboard
-                    ?.writeText(
+                  copiarTexto(
                       `${planoSelecionado.titulo}\n\n${planoSelecionado.conteudo || ''}`
                     )
                     .then(() => setErro(''))
