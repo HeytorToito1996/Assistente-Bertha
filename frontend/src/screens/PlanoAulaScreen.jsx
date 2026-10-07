@@ -169,14 +169,17 @@ export default function PlanoAulaScreen({ usuario }) {
   useEffect(() => {
     if (!componenteSelecionado) return;
     const seriesDoComponente = (componenteSelecionado.series || []).filter((s) => s !== 'Tecnico');
-    if (seriesDoComponente.length && !seriesDoComponente.includes(serie)) {
-      setSerie(seriesDoComponente[0]);
+    if (seriesDoComponente.length) {
+      setSerie((prev) => (seriesDoComponente.includes(prev) ? prev : seriesDoComponente[0]));
     }
     const bimestresDoComponente = componenteSelecionado.bimestres || [];
-    if (bimestresDoComponente.length && !bimestresDoComponente.includes(Number(bimestre))) {
-      setBimestre(bimestresDoComponente[0]);
+    if (bimestresDoComponente.length) {
+      setBimestre((prev) =>
+        bimestresDoComponente.includes(Number(prev)) ? prev : bimestresDoComponente[0],
+      );
     }
-  }, [componenteSelecionado, serie, bimestre]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [componenteSelecionado]);
 
   // Componente digitado à mão não tem série pré-definida: oferece as séries da
   // etapa e escolhe a primeira para o formulário já ficar válido.
