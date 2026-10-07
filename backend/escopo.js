@@ -12,7 +12,9 @@ const path = require('node:path');
 const XLSX = require('xlsx');
 
 const PASTA_PLANILHAS = process.env.PASTA_ESCOPO
-  || path.join(__dirname, '..', 'base_de_dados');
+  || (fs.existsSync(path.join(__dirname, 'base_de_dados'))
+    ? path.join(__dirname, 'base_de_dados')
+    : path.join(__dirname, '..', 'base_de_dados'));
 
 // ---------------------------------------------------------------------------
 // Utilidades de texto
