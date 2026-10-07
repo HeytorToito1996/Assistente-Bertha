@@ -117,3 +117,17 @@ export function arquivoParaBase64(arquivo) {
     leitor.readAsDataURL(arquivo);
   });
 }
+
+export async function criarOcorrencia(dados) {
+  return apiFetch('/api/ocorrencias', {
+    method: 'POST',
+    body: JSON.stringify(dados),
+  });
+}
+
+export async function buscarOcorrencias(nome_do_aluno = '') {
+  const url = nome_do_aluno
+    ? `/api/ocorrencias?nome_do_aluno=${encodeURIComponent(nome_do_aluno)}`
+    : `/api/ocorrencias`;
+  return apiFetch(url);
+}

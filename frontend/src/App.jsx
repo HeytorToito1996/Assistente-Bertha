@@ -4,16 +4,26 @@ import LoginScreen from './screens/LoginScreen';
 import PlanejamentoScreen from './screens/PlanejamentoScreen';
 import PlanoAulaScreen from './screens/PlanoAulaScreen';
 import ErrorBoundary from './components/ErrorBoundary';
+import OcorrenciaFormScreen from './screens/OcorrenciaFormScreen';
+import OcorrenciasListScreen from './screens/OcorrenciasListScreen';
 import './tela-planejamento.css';
 import './tela-plano-aula.css';
 import './tela-erro.css';
 
-// Abas liberadas por cargo. Professor é o único com acesso ao planejamento.
 const ABAS_POR_CARGO = {
   professor: [
     { id: 'documento', rotulo: 'Plano de Aula Mensal', icone: '📄' },
     { id: 'planos', rotulo: 'Planejamento de Aulas', icone: '📚' },
+    { id: 'ocorrencia', rotulo: 'Registrar Ocorrência', icone: '⚠️' },
     { id: 'chat', rotulo: 'Coordenador Pedagógico', icone: '🎓' },
+  ],
+  direcao: [
+    { id: 'chat', rotulo: 'Analista de Gestão', icone: '💬' },
+    { id: 'ocorrencias', rotulo: 'Ocorrências (Gestão)', icone: '📋' },
+  ],
+  secretaria: [
+    { id: 'chat', rotulo: 'Analista de Gestão', icone: '💬' },
+    { id: 'ocorrencias', rotulo: 'Ocorrências (Gestão)', icone: '📋' },
   ],
 };
 
@@ -77,6 +87,10 @@ export default function App() {
             <PlanoAulaScreen usuario={usuario} />
           ) : aba === 'planos' ? (
             <PlanejamentoScreen usuario={usuario} />
+          ) : aba === 'ocorrencia' ? (
+            <OcorrenciaFormScreen usuario={usuario} />
+          ) : aba === 'ocorrencias' ? (
+            <OcorrenciasListScreen usuario={usuario} />
           ) : (
             <ChatScreen usuario={usuario} onSair={() => setUsuario(null)} mostrarPerfilNaSidebar={false} />
           )}

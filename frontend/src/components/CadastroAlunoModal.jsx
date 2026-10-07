@@ -11,18 +11,20 @@ export default function CadastroAlunoModal({ onFechar }) {
   const [cadastrado, setCadastrado] = useState(null);
   const nomeRef = useRef(null);
 
+  const [cargo, setCargo] = useState('aluno');
+
   async function cadastrar(evento) {
     evento.preventDefault();
     const nomeLimpo = nome.trim();
     const emailLimpo = email.trim();
 
     if (nomeLimpo.length < 3) {
-      setErro('Informe o nome completo do aluno(a).');
+      setErro('Informe o nome completo.');
       nomeRef.current?.focus();
       return;
     }
     if (!emailLimpo) {
-      setErro('Informe o e-mail do aluno(a).');
+      setErro('Informe o e-mail.');
       return;
     }
     if (senha.length < 6) {
@@ -41,13 +43,14 @@ export default function CadastroAlunoModal({ onFechar }) {
         nome: nomeLimpo,
         email: emailLimpo,
         senha,
-        cargo: 'aluno',
+        cargo,
       });
       setCadastrado(criado);
       setNome('');
       setEmail('');
       setSenha('');
       setConfirmacao('');
+      setCargo('aluno');
     } catch (erroCapturado) {
       setErro(erroCapturado.message || 'Não foi possível cadastrar. Tente novamente.');
     } finally {
@@ -59,7 +62,7 @@ export default function CadastroAlunoModal({ onFechar }) {
     <div className="modal-fundo" onClick={onFechar}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-cabecalho">
-          <h3>Cadastrar aluno(a)</h3>
+          <h3>Cadastrar usuário</h3>
           <button type="button" className="modal-fechar" onClick={onFechar} title="Fechar">
             ×
           </button>
@@ -107,6 +110,14 @@ export default function CadastroAlunoModal({ onFechar }) {
                 placeholder="Ex.: Maria Oliveira"
                 autoComplete="off"
               />
+            </label>
+
+            <label className="campo">
+              <span>Cargo</span>
+              <select value={cargo} onChange={(e) => setCargo(e.target.value)}>
+                <option value="aluno">Aluno</option>
+                <option value="professor">Professor</option>
+              </select>
             </label>
 
             <label className="campo">

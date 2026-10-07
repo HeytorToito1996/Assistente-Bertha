@@ -1602,6 +1602,48 @@ app.delete('/api/historico/:userId', async (req, res) => {
 });
 
 // ============================================================================
+//  OCORRÊNCIAS
+// ============================================================================
+app.post('/api/ocorrencias', async (req, res) => {
+  try {
+    const { nome_do_aluno, aluno_id, tipo_ocorrencia, descricao, data } = req.body;
+    const novaOcorrencia = {
+      nome_do_aluno,
+      aluno_id: aluno_id || null,
+      tipo_ocorrencia,
+      descricao,
+      data,
+      criadoEm: FieldValue.serverTimestamp(),
+    };
+    const docRef = await db.collection('ocorrencias').add(novaOcorrencia);
+    res.json({ id: docRef.id, ...novaOcorrencia });
+  } catch (erro) {
+    console.error('Erro ao salvar ocorrência:', erro);
+    res.status(500).json({ erro: 'Falha ao registrar ocorrência.' });
+  }
+});
+
+app.get('/api/ocorrencias', async (req, res) => {
+  try {
+    const { nome_do_aluno } = req.query;
+    let query = db.collection('ocorrencias').orderBy('criadoEm', 'desc');
+
+    if (nome_do_aluno) {
+      // Basic exact match for simplicity as requested "por nome_do_aluno"
+      query = db.collection('ocorrencias').where('nome_do_aluno', '==', nome_do_aluno);
+    }
+
+    const snapshot = await query.get();
+    const ocorrencias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(ocorrencias);
+  } catch (erro) {
+    console.error('Erro ao buscar ocorrências:', erro);
+    res.status(500).json({ erro: 'Falha ao buscar ocorrências.' });
+  }
+});
+
+
+// ============================================================================
 //  TRATAMENTO DE ERROS / ROTA 404
 // ============================================================================
 app.use((req, res) => {
