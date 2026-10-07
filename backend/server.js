@@ -1606,13 +1606,15 @@ app.delete('/api/historico/:userId', async (req, res) => {
 // ============================================================================
 app.post('/api/ocorrencias', async (req, res) => {
   try {
-    const { nome_do_aluno, aluno_id, tipo_ocorrencia, descricao, data } = req.body;
+    const { nome_do_aluno, aluno_id, tipo_ocorrencia, descricao, data, serie, autor } = req.body;
     const novaOcorrencia = {
       nome_do_aluno,
       aluno_id: aluno_id || null,
+      serie: serie || null,
       tipo_ocorrencia,
       descricao,
       data,
+      autor: autor || null,
       criadoEm: FieldValue.serverTimestamp(),
     };
     const docRef = await db.collection('ocorrencias').add(novaOcorrencia);
@@ -1625,16 +1627,19 @@ app.post('/api/ocorrencias', async (req, res) => {
 
 app.get('/api/ocorrencias', async (req, res) => {
   try {
-    const { nome_do_aluno } = req.query;
-    let query = db.collection('ocorrencias').orderBy('criadoEm', 'desc');
+    const { q } = req.query;
+    const snapshot = await db.collection('ocorrencias').orderBy('criadoEm', 'desc').get();
+    let ocorrencias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    if (nome_do_aluno) {
-      // Basic exact match for simplicity as requested "por nome_do_aluno"
-      query = db.collection('ocorrencias').where('nome_do_aluno', '==', nome_do_aluno);
+    if (q) {
+      const termo = q.toLowerCase();
+      ocorrencias = ocorrencias.filter(o => {
+        const matchNome = o.nome_do_aluno && o.nome_do_aluno.toLowerCase().includes(termo);
+        const matchSerie = o.serie && o.serie.toLowerCase().includes(termo);
+        return matchNome || matchSerie;
+      });
     }
 
-    const snapshot = await query.get();
-    const ocorrencias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(ocorrencias);
   } catch (erro) {
     console.error('Erro ao buscar ocorrências:', erro);

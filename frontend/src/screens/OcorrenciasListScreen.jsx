@@ -36,7 +36,7 @@ export default function OcorrenciasListScreen({ usuario }) {
       <form onSubmit={handlePesquisa} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
         <input 
           type="text" 
-          placeholder="Buscar por nome do aluno..." 
+          placeholder="Buscar por nome ou série..." 
           value={nomeBusca}
           onChange={e => setNomeBusca(e.target.value)}
           style={{ flex: 1, padding: '0.5rem' }}
@@ -56,9 +56,11 @@ export default function OcorrenciasListScreen({ usuario }) {
             ocorrencias.map(o => (
               <div key={o.id} style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '8px' }}>
                 <p><strong>Aluno:</strong> {o.nome_do_aluno} {o.aluno_id && `(ID: ${o.aluno_id})`}</p>
+                <p><strong>Série:</strong> {o.serie || 'Não informada'}</p>
                 <p><strong>Tipo:</strong> {o.tipo_ocorrencia}</p>
                 <p><strong>Data:</strong> {o.data}</p>
                 <p><strong>Descrição:</strong> {o.descricao}</p>
+                <p><small>Registrado por: {o.autor || 'Desconhecido'}</small></p>
               </div>
             ))
           )}

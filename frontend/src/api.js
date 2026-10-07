@@ -125,9 +125,9 @@ export async function criarOcorrencia(dados) {
   });
 }
 
-export async function buscarOcorrencias(nome_do_aluno = '') {
-  const url = nome_do_aluno
-    ? `/api/ocorrencias?nome_do_aluno=${encodeURIComponent(nome_do_aluno)}`
+export async function buscarOcorrencias(busca = '') {
+  const url = busca
+    ? `/api/ocorrencias?q=${encodeURIComponent(busca)}`
     : `/api/ocorrencias`;
   return apiFetch(url);
 }

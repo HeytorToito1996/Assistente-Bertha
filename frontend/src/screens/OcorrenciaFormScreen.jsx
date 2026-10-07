@@ -4,6 +4,7 @@ import { criarOcorrencia } from '../api';
 export default function OcorrenciaFormScreen({ usuario }) {
   const [nome, setNome] = useState('');
   const [alunoId, setAlunoId] = useState('');
+  const [serie, setSerie] = useState('');
   const [tipo, setTipo] = useState('disciplinar');
   const [descricao, setDescricao] = useState('');
   const [data, setData] = useState('');
@@ -12,6 +13,7 @@ export default function OcorrenciaFormScreen({ usuario }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!nome.trim()) return setStatus('Informe o nome do aluno.');
+    if (!serie.trim()) return setStatus('Informe a série do aluno.');
     if (!descricao.trim()) return setStatus('Informe a descrição.');
     if (!data) return setStatus('Informe a data.');
 
@@ -20,13 +22,16 @@ export default function OcorrenciaFormScreen({ usuario }) {
       await criarOcorrencia({
         nome_do_aluno: nome.trim(),
         aluno_id: alunoId.trim(),
+        serie: serie.trim(),
         tipo_ocorrencia: tipo,
         descricao,
         data,
+        autor: usuario?.nome || 'Usuário Desconhecido',
       });
       setStatus('Ocorrência registrada com sucesso!');
       setNome('');
       setAlunoId('');
+      setSerie('');
       setDescricao('');
       setData('');
     } catch (erro) {
@@ -46,6 +51,11 @@ export default function OcorrenciaFormScreen({ usuario }) {
         <label className="campo">
           <span>ID do Aluno (opcional)</span>
           <input type="text" value={alunoId} onChange={e => setAlunoId(e.target.value)} />
+        </label>
+
+        <label className="campo">
+          <span>Série</span>
+          <input type="text" value={serie} onChange={e => setSerie(e.target.value)} placeholder="Ex: 8º Ano A" />
         </label>
 
         <label className="campo">
