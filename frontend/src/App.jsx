@@ -29,10 +29,13 @@ const ABAS_POR_CARGO = {
 
 export default function App() {
   const [usuario, setUsuario] = useState(null);
-  const [aba, setAba] = useState('documento');
+  const [aba, setAba] = useState(null);
 
   if (!usuario) {
-    return <LoginScreen onLogin={setUsuario} />;
+    return <LoginScreen onLogin={(u) => {
+      setUsuario(u);
+      setAba(ABAS_POR_CARGO[u.cargo]?.[0]?.id || null);
+    }} />;
   }
 
   const abas = ABAS_POR_CARGO[usuario.cargo];
@@ -69,7 +72,7 @@ export default function App() {
             <span className="avatar">{usuario.nome?.charAt(0).toUpperCase()}</span>
             <div>
               <strong>{usuario.nome}</strong>
-              <small>Professor(a)</small>
+              <small>{usuario.cargo === 'professor' ? 'Professor(a)' : (usuario.cargo === 'direcao' || usuario.cargo === 'secretaria') ? 'Gestão' : 'Aluno(a)'}</small>
             </div>
           </div>
           <button type="button" className="botao-sair" onClick={() => setUsuario(null)}>
