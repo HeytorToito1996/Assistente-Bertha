@@ -8,6 +8,7 @@ import OcorrenciaFormScreen from './screens/OcorrenciaFormScreen';
 import OcorrenciasListScreen from './screens/OcorrenciasListScreen';
 import './tela-planejamento.css';
 import './tela-plano-aula.css';
+import './tela-ocorrencias.css';
 import './tela-erro.css';
 
 const ABAS_POR_CARGO = {

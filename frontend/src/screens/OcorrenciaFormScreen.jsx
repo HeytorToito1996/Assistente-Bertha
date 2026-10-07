@@ -40,9 +40,9 @@ export default function OcorrenciaFormScreen({ usuario }) {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+    <div className="ocor-container" style={{ maxWidth: '600px' }}>
       <h2>Registrar Ocorrência</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit} className="ocor-form">
         <label className="campo">
           <span>Nome do Aluno</span>
           <input type="text" value={nome} onChange={e => setNome(e.target.value)} />
@@ -78,7 +78,11 @@ export default function OcorrenciaFormScreen({ usuario }) {
         </label>
 
         <button type="submit" className="botao-primario">Salvar</button>
-        {status && <p style={{ marginTop: '1rem' }}>{status}</p>}
+        {status && (
+          <div className={`ocor-status ${status.includes('sucesso') ? 'sucesso' : status.includes('Salvando') ? 'info' : 'erro'}`}>
+            {status}
+          </div>
+        )}
       </form>
     </div>
   );

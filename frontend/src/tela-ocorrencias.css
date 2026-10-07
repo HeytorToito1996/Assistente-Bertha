@@ -1,0 +1,172 @@
+/* ============================================================================
+   TELA DE OCORRÊNCIAS
+   ----------------------------------------------------------------------------
+   Prefixos "ocor-" para estilos do módulo de ocorrências.
+   ========================================================================== */
+
+.ocor-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fade-in 0.3s ease-out;
+}
+
+.ocor-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* Formulário de Registro */
+.ocor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ocor-status {
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.ocor-status.sucesso {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.ocor-status.erro {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.ocor-status.info {
+  background-color: #e0f2fe;
+  color: #075985;
+}
+
+/* Busca e Listagem */
+.ocor-busca-form {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ocor-busca-form input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ocor-busca-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.ocor-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ocor-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ocor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ocor-card p {
+  margin: 0.5rem 0;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ocor-card p strong {
+  color: #111827;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 90px;
+}
+
+.ocor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ocor-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.ocor-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ocor-tag.disciplinar {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.ocor-tag.comportamental {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.ocor-tag.pedagogica {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.ocor-vazio {
+  text-align: center;
+  padding: 3rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  color: #6b7280;
+  font-size: 1.1rem;
+  border: 2px dashed #e5e7eb;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

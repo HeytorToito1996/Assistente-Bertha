@@ -29,38 +29,48 @@ export default function OcorrenciasListScreen({ usuario }) {
     fetchOcorrencias(nomeBusca.trim());
   }
 
+  function formatarTipo(tipo) {
+    if (!tipo) return '';
+    return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+  }
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="ocor-container">
       <h2>Ocorrências de Alunos</h2>
       
-      <form onSubmit={handlePesquisa} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <form onSubmit={handlePesquisa} className="ocor-busca-form">
         <input 
           type="text" 
           placeholder="Buscar por nome ou série..." 
           value={nomeBusca}
           onChange={e => setNomeBusca(e.target.value)}
-          style={{ flex: 1, padding: '0.5rem' }}
         />
         <button type="submit" className="botao-primario">Pesquisar</button>
       </form>
 
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
+      {erro && <div className="ocor-status erro" style={{ marginBottom: '1rem' }}>{erro}</div>}
       
       {carregando ? (
-        <p>Carregando...</p>
+        <div className="ocor-status info">Carregando...</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="ocor-lista">
           {ocorrencias.length === 0 ? (
-            <p>Nenhuma ocorrência encontrada.</p>
+            <div className="ocor-vazio">Nenhuma ocorrência encontrada.</div>
           ) : (
             ocorrencias.map(o => (
-              <div key={o.id} style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '8px' }}>
-                <p><strong>Aluno:</strong> {o.nome_do_aluno} {o.aluno_id && `(ID: ${o.aluno_id})`}</p>
+              <div key={o.id} className="ocor-card">
+                <div className="ocor-card-header">
+                  <h3>{o.nome_do_aluno} {o.aluno_id && <span style={{ color: '#6b7280', fontSize: '0.9rem' }}>(ID: {o.aluno_id})</span>}</h3>
+                  <span className={`ocor-tag ${o.tipo_ocorrencia || 'disciplinar'}`}>
+                    {formatarTipo(o.tipo_ocorrencia) || 'Disciplinar'}
+                  </span>
+                </div>
                 <p><strong>Série:</strong> {o.serie || 'Não informada'}</p>
-                <p><strong>Tipo:</strong> {o.tipo_ocorrencia}</p>
                 <p><strong>Data:</strong> {o.data}</p>
                 <p><strong>Descrição:</strong> {o.descricao}</p>
-                <p><small>Registrado por: {o.autor || 'Desconhecido'}</small></p>
+                <p style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #f3f4f6' }}>
+                  <small style={{ color: '#6b7280' }}>Registrado por: <strong>{o.autor || 'Desconhecido'}</strong></small>
+                </p>
               </div>
             ))
           )}
