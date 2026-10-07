@@ -44,7 +44,7 @@ const planoAula = require('./plano-aula');
 // ============================================================================
 //  CONFIGURAÇÕES GERAIS
 // ============================================================================
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.LOCAL_PORT || 3000);
 // No plano gratuito a demanda pelos modelos mais novos (3.6/3.7/3.8) satura com
 // frequência e o Gemini responde 503 "high demand". Por isso o padrão da fila é
 // começar pelos modelos Flash 3.5, que respondem de forma estável, e só depois
@@ -82,13 +82,13 @@ function inicializarFirebase() {
     return getFirestore();
   }
 
-  const caminhoCredencial = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  const caminhoCredencial = process.env.SERVICE_ACCOUNT_PATH;
   const caminhoAbsoluto = caminhoCredencial ? path.resolve(__dirname, caminhoCredencial) : null;
 
   if (caminhoAbsoluto && !fs.existsSync(caminhoAbsoluto)) {
     console.error(
       `\n[ERRO FATAL] Arquivo de credencial do Firebase não encontrado em:\n  "${caminhoAbsoluto}"\n` +
-        'Confira a variável FIREBASE_SERVICE_ACCOUNT_PATH no arquivo ".env" e ' +
+        'Confira a variável SERVICE_ACCOUNT_PATH no arquivo ".env" e ' +
         'o nome do arquivo JSON baixado do Firebase (ex.: service-account-key.json).\n'
     );
     process.exit(1);
@@ -1682,14 +1682,21 @@ async function autenticarUsuario(email, senha) {
 }
 
 // ============================================================================
-//  INÍCIO DO SERVIDOR
+//  INÍCIO DO SERVIDOR E EXPORT PARA FIREBASE FUNCTIONS
 // ============================================================================
-app.listen(PORT, () => {
-  const modelos = montarListaDeModelos();
-  console.log(
-    `\n[Assistente Escolar API] Rodando em http://localhost:${PORT}\n` +
-      `Modelo principal: ${MODELO_GEMINI} | Fallbacks: ${modelos
-        .slice(1)
-        .join(', ')} | Health check: http://localhost:${PORT}/api/health\n`
-  );
-});
+const isFirebase = process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FUNCTIONS_WORKER_CONTEXT !== undefined || process.env.FUNCTION_TARGET !== undefined || process.env.K_SERVICE !== undefined;
+
+if (!isFirebase) {
+  app.listen(PORT, () => {
+    const modelos = montarListaDeModelos();
+    console.log(
+      `\n[Assistente Escolar API] Rodando em http://localhost:${PORT}\n` +
+        `Modelo principal: ${MODELO_GEMINI} | Fallbacks: ${modelos
+          .slice(1)
+          .join(', ')} | Health check: http://localhost:${PORT}/api/health\n`
+    );
+  });
+}
+
+const { onRequest } = require('firebase-functions/v2/https');
+exports.api = onRequest({ timeoutSeconds: 300, memory: '512MiB', cors: true }, app);

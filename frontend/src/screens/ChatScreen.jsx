@@ -87,6 +87,7 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [cadastroAberto, setCadastroAberto] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const fimDaLista = useRef(null);
   const inputArquivo = useRef(null);
@@ -252,10 +253,10 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
 
   return (
     <div className="chat">
-      <aside className="sidebar">
+      <aside className={`sidebar ${menuAberto ? 'sidebar-aberta' : ''}`}>
         <div className="sidebar-cabecalho">
           <strong>Conversas</strong>
-          <button type="button" className="botao-novo" title="Nova conversa" onClick={() => { setEntrada(''); setSessaoAtiva(null); }}>
+          <button type="button" className="botao-novo" title="Nova conversa" onClick={() => { setEntrada(''); setSessaoAtiva(null); setMenuAberto(false); }}>
             +
           </button>
         </div>
@@ -275,7 +276,7 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
                   <button
                     type="button"
                     className={`sessao-item ${indice === sessaoAtiva ? 'sessao-ativa' : ''}`}
-                    onClick={() => setSessaoAtiva(indice)}
+                    onClick={() => { setSessaoAtiva(indice); setMenuAberto(false); }}
                     style={{ flex: 1 }}
                   >
                     <span className="sessao-titulo">{titulo.slice(0, 40)}</span>
@@ -320,9 +321,18 @@ export default function ChatScreen({ usuario, onSair, mostrarPerfilNaSidebar = t
 
       <main className="area-chat">
         <header className="chat-cabecalho">
-          <div>
-            <h2>{tituloAssistant}</h2>
-            <p>{DESCRICAO_POR_CARGO[usuario.cargo]}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              className="botao-hamburguer"
+              onClick={() => setMenuAberto(!menuAberto)}
+              title="Menu"
+            >
+              ☰
+            </button>
+            <div>
+              <h2>{tituloAssistant}</h2>
+              <p>{DESCRICAO_POR_CARGO[usuario.cargo]}</p>
+            </div>
           </div>
           <div className="cabecalho-acoes">
             {podeCadastrar && (

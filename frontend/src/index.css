@@ -614,3 +614,74 @@ button {
     display: none !important;
   }
 }
+/* Responsividade para o Chat */
+@media (max-width: 768px) {
+  .chat {
+    flex-direction: column;
+    height: 100dvh;
+  }
+  
+  .sidebar {
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--borda);
+    flex-shrink: 0;
+  }
+
+  .area-chat {
+    flex: 1;
+    height: 0; /* O flex-grow faz ocupar o resto da altura */
+  }
+
+  .chat-cabecalho {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+  
+  .chat-cabecalho h2 {
+    font-size: 15px;
+  }
+  
+  .entrada {
+    padding: 12px 16px;
+  }
+  
+  .bolha {
+    max-width: 90%;
+    font-size: 14px;
+  }
+  
+  .mensagens {
+    padding: 16px;
+  }
+  
+  .modal {
+    padding: 16px;
+  }
+}
+/* Hamburguer CSS */
+.botao-hamburguer {
+  display: none;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  color: var(--texto);
+}
+
+@media (max-width: 768px) {
+  .botao-hamburguer {
+    display: block;
+  }
+  .chat .sidebar {
+    display: none;
+  }
+  .chat .sidebar.sidebar-aberta {
+    display: flex;
+    max-height: 50vh;
+  }
+}

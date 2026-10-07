@@ -577,3 +577,35 @@
   flex: 1;
   min-width: 0;
 }
+/* Responsividade do Professor */
+@media (max-width: 768px) {
+  .prof-shell {
+    height: 100dvh;
+  }
+  .prof-nav {
+    flex-wrap: wrap;
+    padding: 10px;
+    justify-content: space-between;
+  }
+  .prof-nav-abas {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    margin-left: 0;
+    margin-top: 10px;
+    padding-bottom: 5px;
+  }
+  .prof-nav-aba {
+    white-space: nowrap;
+  }
+  .plan {
+    flex-direction: column;
+  }
+  .plan-formulario {
+    width: 100%;
+    min-width: 100%;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--borda);
+  }
+}
