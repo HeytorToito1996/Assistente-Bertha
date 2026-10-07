@@ -5,14 +5,13 @@ import {
   Eye,
   EyeOff,
   GraduationCap,
-  IdCard,
   Lock,
   Mail,
   School,
   UserCheck,
   Zap,
 } from 'lucide-react';
-import { buscarUsuario, login } from '../api';
+import { login } from '../api';
 import '../tela-login.css';
 
 /* ---------------------------------------------------------------------------
@@ -61,11 +60,6 @@ export default function LoginScreen({ onLogin }) {
   const [erro, setErro] = useState('');
   const emailRef = useRef(null);
 
-  const [codigoSeed, setCodigoSeed] = useState('');
-  const [carregandoSeed, setCarregandoSeed] = useState(false);
-  const [erroSeed, setErroSeed] = useState('');
-  const codigoRef = useRef(null);
-
   const perfilAtual = PERFIS.find((p) => p.cargo === perfil) || PERFIS[0];
 
   function trocarPerfil(novoPerfil) {
@@ -112,28 +106,9 @@ export default function LoginScreen({ onLogin }) {
     emailRef.current?.focus();
   }
 
-  async function entrarComCodigo(evento) {
-    evento.preventDefault();
-    const codigo = codigoSeed.trim();
-    if (!codigo) {
-      setErroSeed('Informe o código de usuário.');
-      codigoRef.current?.focus();
-      return;
-    }
-
-    setErroSeed('');
-    setCarregandoSeed(true);
-    try {
-      const usuario = await buscarUsuario(codigo);
-      onLogin(usuario);
-    } catch (erroCapturado) {
-      setErroSeed(erroCapturado.message || 'Código inválido.');
-    } finally {
-      setCarregandoSeed(false);
-    }
-  }
 
   return (
+
     <main className="login-screen">
       <div className="login-wrapper">
         {/* Cabeçalho institucional */}
@@ -232,50 +207,21 @@ export default function LoginScreen({ onLogin }) {
               <ArrowRight aria-hidden="true" />
             </button>
 
-            {/* Atalho de acesso rápido para avaliação */}
-            <div className="login-quick-demo">
-              <span className="login-demo-label">Acesso rápido para avaliação:</span>
-              <div className="login-demo-buttons">
-                <button type="button" className="login-btn-demo" onClick={preencherDemo}>
-                  <Zap aria-hidden="true" />
-                  <span>Preencher dados de {perfilAtual.rotulo} Demo</span>
-                </button>
+            {/* Atalho de acesso rápido — apenas para o perfil Aluno */}
+            {perfil === 'aluno' && (
+              <div className="login-quick-demo">
+                <span className="login-demo-label">Acesso rápido para avaliação:</span>
+                <div className="login-demo-buttons">
+                  <button type="button" className="login-btn-demo" onClick={preencherDemo}>
+                    <Zap aria-hidden="true" />
+                    <span>Preencher dados de Aluno Demo</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </form>
-
-          {/* Entrada alternativa por código de usuário (modo teste) */}
-          <div className="login-divisor">
-            <span>Ou entre pelo código (modo teste)</span>
-          </div>
-
-          <form className="login-modo-teste" onSubmit={entrarComCodigo}>
-            <div className="login-input-wrap">
-              <IdCard className="login-input-icon" aria-hidden="true" />
-              <input
-                ref={codigoRef}
-                type="text"
-                value={codigoSeed}
-                onChange={(e) => {
-                  setCodigoSeed(e.target.value);
-                  setErroSeed('');
-                }}
-                placeholder="Ex.: ALUNO-001, SEC-001 ou PROF-002"
-                autoComplete="off"
-              />
-            </div>
-            <button type="submit" className="login-btn-codigo" disabled={carregandoSeed}>
-              {carregandoSeed ? 'Entrando…' : 'Entrar'}
-            </button>
-          </form>
-
-          {erroSeed && (
-            <p className="login-erro" role="alert" style={{ marginTop: 12 }}>
-              <AlertCircle aria-hidden="true" />
-              <span>{erroSeed}</span>
-            </p>
-          )}
         </div>
+
 
         {/* Rodapé */}
         <footer className="login-footer">
