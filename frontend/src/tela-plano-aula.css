@@ -651,17 +651,22 @@
 @media (max-width: 768px) {
   .plano {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
   .plano-formulario {
     width: 100%;
     min-width: 100%;
-    max-height: 45vh;
+    max-height: none;
+    height: auto;
     border-right: none;
-    border-bottom: 1px solid var(--borda);
+    border-bottom: 2px dashed var(--borda);
+    overflow: visible;
   }
   .plano-conteudo {
     flex: 1;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
   }
   
   /* Ajuste para que campos duplos no form quebrem em telas estreitas */
